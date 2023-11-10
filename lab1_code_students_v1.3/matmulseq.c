@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <time.h> //Added time.h to mesure time
+#include <pthread.h> 
 
 #define SIZE 1024
 
@@ -30,25 +30,31 @@ init_matrix(void)
         }
 }
 
-static void
-matmul_seq()
-{
-    int i, j, k;
-
-    for (i = 0; i < SIZE; i++) {
-        for (j = 0; j < SIZE; j++) {
-            c[i][j] = 0.0;
-            for (k = 0; k < SIZE; k++)
-                c[i][j] = c[i][j] + a[i][k] * b[k][j];
-        }
+static void thread_multi(double row){
+    int j, k;
+    for (j = 0; j < SIZE; j++) {
+        c[(int)row][j] = 0.0;
+        for (k = 0; k < SIZE; k++)
+            c[(int)row][j] = c[(int)row][j] + a[(int)row][k] * b[k][j];
     }
 }
+
+static void
+matmul_seq()
+{   
+    pthread_t thread;
+    int i;
+    for (i = 0; i < SIZE; i++)
+        pthread_create(&thread, NULL, thread_multi, (void*)i);
+    for (i = 0; i < SIZE; i++)
+        pthread_join(thread, NULL);
+}
+
 
 static void
 print_matrix(void)
 {
     int i, j;
-
     for (i = 0; i < SIZE; i++) {
         for (j = 0; j < SIZE; j++)
 	        printf(" %7.2f", c[i][j]);
@@ -59,15 +65,7 @@ print_matrix(void)
 int
 main(int argc, char **argv)
 {
-    clock_t timestamp; //initilaze time stamp variable
-    double time_taken; //initilaze time taken variable
-    timestamp = clock(); //start timer
-
     init_matrix();
     matmul_seq();
-
-    time_taken = clock() - timestamp; //end timer
-    time_taken = ((double)time_taken)/CLOCKS_PER_SEC; //calculate the ime it took the program to run
-    printf("Time taken: %f\n", time_taken);
     //print_matrix();
 }
