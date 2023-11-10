@@ -43,6 +43,13 @@ int main(void) {
         printf("Received number: %d\n", buf.mnumber);
     }
 
+    //Moved this part of the code over to recv in order to get rid of the sending code to close faster then
+    //recived is done
+    if (msgctl(msqid, IPC_RMID, NULL) == -1) {
+        perror("msgctl");
+        printf("errno: %d\n", errno); // Print the value of errno for more information.
+        exit(1);}
+
     printf("message queue: done receiving messages.\n");
     system("rm msgq.txt");
     return 0;

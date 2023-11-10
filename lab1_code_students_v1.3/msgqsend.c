@@ -72,16 +72,6 @@ int main(void) {
    if (msgsnd(msqid, &buf, len, 0) == -1) /* +1 for '\0' */
       perror("msgsnd");
 
-   printf("key: %d\n", key);
-   printf("msqid: %d\n", msqid);
-
-   //This gives problems, works when removed
-   if (msgctl(msqid, IPC_RMID, NULL) == -1) {
-   perror("msgctl");
-   printf("errno: %d\n", errno); // Print the value of errno for more information.
-   exit(1);
-}
-
    printf("message queue: done sending messages.\n");
    free(numbers);
    return 0;
