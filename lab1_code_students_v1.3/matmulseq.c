@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <time.h> //Added time.h to mesure time
 
 #define SIZE 1024
 
@@ -58,7 +59,15 @@ print_matrix(void)
 int
 main(int argc, char **argv)
 {
+    clock_t timestamp; //initilaze time stamp variable
+    double time_taken; //initilaze time taken variable
+    timestamp = clock(); //start timer
+
     init_matrix();
     matmul_seq();
+
+    time_taken = clock() - timestamp; //end timer
+    time_taken = ((double)time_taken)/CLOCKS_PER_SEC; //calculate the ime it took the program to run
+    printf("Time taken: %f\n", time_taken);
     //print_matrix();
 }
