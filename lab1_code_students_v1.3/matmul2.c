@@ -16,7 +16,6 @@ static double c[SIZE][SIZE];
 
 static void init_a(void){
     int i, j;
-
     for (i = 0; i < SIZE; i++)
         for (j = 0; j < SIZE; j++)
             a[i][j] = (double)(i + j);
@@ -24,7 +23,6 @@ static void init_a(void){
 
 static void init_b(void){
     int i, j;
-
     for (i = 0; i < SIZE; i++)
         for (j = 0; j < SIZE; j++)
             b[i][j] = (double)(i * j);
