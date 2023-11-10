@@ -9,7 +9,7 @@
 #include <pthread.h> 
 
 #define SIZE 1024
-
+#define NUM_THREADS 1
 static double a[SIZE][SIZE];
 static double b[SIZE][SIZE];
 static double c[SIZE][SIZE];
@@ -37,12 +37,17 @@ init_matrix(void)
     pthread_join(thread_b, NULL);
 }
 
-static void thread_multi(double row){
-    int j, k;
-    for (j = 0; j < SIZE; j++) {
-        c[(int)row][j] = 0.0;
-        for (k = 0; k < SIZE; k++)
-            c[(int)row][j] = c[(int)row][j] + a[(int)row][k] * b[k][j];
+static void thread_multi(int split){
+    int i, j, k;
+    int start = split * SIZE / NUM_THREADS;
+    int end = (split + 1) * SIZE / NUM_THREADS;
+
+    for (i = start; i < end; i++) {
+        for (j = 0; j < SIZE; j++) {
+            c[i][j] = 0.0;
+            for (k = 0; k < SIZE; k++)
+                c[i][j] = c[i][j] + a[i][k] * b[k][j];
+        }
     }
 }
 
@@ -51,9 +56,9 @@ matmul_seq()
 {   
     pthread_t thread;
     int i;
-    for (i = 0; i < SIZE; i++)
+    for (i = 0; i < NUM_THREADS; i++)
         pthread_create(&thread, NULL, thread_multi, (void*)i);
-    for (i = 0; i < SIZE; i++)
+    for (i = 0; i < NUM_THREADS; i++)
         pthread_join(thread, NULL);
 }
 
