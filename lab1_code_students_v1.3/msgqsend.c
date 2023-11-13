@@ -21,7 +21,6 @@ int* generate_50_numbers(){
 };
 
 //Changed the mtext to be mnumber and setting the size to ine integer since we only send one integer at a time
-
 #define PERMS 0644
 struct my_msgbuf {
    long mtype;
