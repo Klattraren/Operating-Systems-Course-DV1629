@@ -6,7 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
-#include <pthread.h> 
+#include <pthread.h>
 
 #define SIZE 1024
 
@@ -14,32 +14,33 @@ static double a[SIZE][SIZE];
 static double b[SIZE][SIZE];
 static double c[SIZE][SIZE];
 
+//Created a functon to initialize the matrix a
 static void init_a(void){
     int i, j;
-
-    for (i = 0; i < SIZE; i++)
-        for (j = 0; j < SIZE; j++)
-            a[i][j] = (double)(i + j);
+    for (i = 0; i < SIZE; i++) //For each row
+        for (j = 0; j < SIZE; j++) //For each column
+            a[i][j] = (double)(i + j); //Set the value of the element
 }
 
+//Created a functon to initialize the matrix b
 static void init_b(void){
     int i, j;
-
-    for (i = 0; i < SIZE; i++)
-        for (j = 0; j < SIZE; j++)
-            b[i][j] = (double)(i * j);
+    for (i = 0; i < SIZE; i++) //For each row
+        for (j = 0; j < SIZE; j++) //For each column
+            b[i][j] = (double)(i * j); //Set the value of the element
 }
+
 static void
 init_matrix(void)
 {
-    pthread_t thread_a, thread_b;
-    pthread_create(&thread_a, NULL, init_a, NULL);
-    pthread_create(&thread_b, NULL, init_b, NULL);
-    pthread_join(thread_a, NULL);
-    pthread_join(thread_b, NULL);
+    pthread_t thread_a, thread_b; //initialize two threads for a and b
+    pthread_create(&thread_a, NULL, init_a, NULL); //assign the threads to the functions
+    pthread_create(&thread_b, NULL, init_b, NULL); //assign the threads to the functions
+    pthread_join(thread_a, NULL); //wait for the threads to finish
+    pthread_join(thread_b, NULL); //wait for the threads to finish
 }
 
-static void thread_multi(double row){
+static void thread_multi(double row){ //the function takes in a row and computes the multiplication for every element on that row
     int j, k;
     for (j = 0; j < SIZE; j++) {
         c[(int)row][j] = 0.0;
@@ -50,12 +51,12 @@ static void thread_multi(double row){
 
 static void
 matmul_seq()
-{   
+{
     pthread_t thread;
     int i;
-    for (i = 0; i < SIZE; i++)
+    for (i = 0; i < SIZE; i++) //for each row creat a new thread
         pthread_create(&thread, NULL, thread_multi, (void*)i);
-    for (i = 0; i < SIZE; i++)
+    for (i = 0; i < SIZE; i++) //wait for the threads to finish
         pthread_join(thread, NULL);
 }
 
