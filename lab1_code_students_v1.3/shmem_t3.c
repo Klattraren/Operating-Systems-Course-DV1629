@@ -5,9 +5,13 @@
 #include <sys/ipc.h>
 #include <sys/shm.h>
 #include <time.h>
+#include <semaphore.h>
+#include <fcntl.h> /* For O_* constants */
 #define SHMSIZE 128
 #define SHM_R 0400
 #define SHM_W 0200
+
+sem_t *mutex_sem, *empty_sem, *full_sem;
 
 int main(int argc, char **argv)
 {
@@ -24,6 +28,13 @@ int main(int argc, char **argv)
 	struct shmid_ds *shm_buf;
 
 	srand(time(NULL));
+	/* create semaphores */
+	/* 0644 means read and write */
+	empty_sem = sem_open("/sem_empty", O_CREAT, 0644, 10);
+	full_sem = sem_open("/sem_full", O_CREAT, 0644, 0);
+	mutex_sem = sem_open("/sem_mutex", O_CREAT, 0644, 1);
+
+
 
 	/* allocate a chunk of shared memory */
 	shmid = shmget(IPC_PRIVATE, SHMSIZE, IPC_CREAT | SHM_R | SHM_W);
@@ -38,15 +49,21 @@ int main(int argc, char **argv)
 			/* write to shmem */
 			var1++;
 
+
 			int wait_time = (rand() % 400000) + 100000;
 			usleep(wait_time);
 
-			while (shmp->count >= 10); /* busy wait until the buffer is empty */
+			sem_wait(empty_sem);
+			sem_wait(mutex_sem);
+
 			shmp->buffer[shmp->writeIndex] = var1;
 			shmp->writeIndex = (shmp->writeIndex + 1) % 10;
 			shmp->count++;
 			printf("Sending %d\n", var1); 
 			fflush(stdout);
+
+			sem_post(mutex_sem);
+			sem_post(full_sem);
 		}
 		shmdt(addr);
 		shmctl(shmid, IPC_RMID, shm_buf);
@@ -54,7 +71,10 @@ int main(int argc, char **argv)
 		/* here's the child, acting as consumer */
 		while (var2 < 100) {
 			/* read from shmem */
-			while (shmp->count == 0); /* busy wait until there is something */
+			
+			sem_wait(full_sem);
+			sem_wait(mutex_sem);
+
 			var2 = shmp->buffer[shmp->readIndex];
 			shmp->readIndex = (shmp->readIndex + 1) % 10;
 			shmp->count--;
@@ -63,8 +83,17 @@ int main(int argc, char **argv)
 			usleep(wait_time);
 
 			printf("Received %d\n", var2); fflush(stdout);
+
+			sem_post(mutex_sem);
+			sem_post(empty_sem);
 		}
 		shmdt(addr);
 		shmctl(shmid, IPC_RMID, shm_buf);
 	}
+	sem_close(empty_sem);
+	sem_close(full_sem);
+	sem_close(mutex_sem);
+	sem_unlink("/sem_empty");
+	sem_unlink("/sem_full");
+	sem_unlink("/sem_mutex");
 }
