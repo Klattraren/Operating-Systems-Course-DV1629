@@ -9,7 +9,7 @@
 #include <pthread.h>
 
 #define SIZE 1024
-#define NUM_THREADS 1
+#define NUM_THREADS 4
 static double a[SIZE][SIZE];
 static double b[SIZE][SIZE];
 static double c[SIZE][SIZE];
