@@ -44,23 +44,6 @@ void close_file(){
     fclose(fptr);
 }
 
-//adding a new page to the array and removing the least used
-int add_new_page(int page_index,int *pages, int no_pyhsical_pages){
-    for (int i = no_pyhsical_pages; i > 0; i--){
-        pages[i] = pages[i-1];
-    }
-    pages[0] = page_index;
-}
-
-//If a page is already in the "RAM" then move it to the most recent used
-int move_priority(int standing_index,int *pages, int no_pyhsical_pages){
-    int saving_page = pages[standing_index];
-    for (int i = standing_index; i > 0; i--){
-        pages[i] = pages[i-1];
-    }
-    pages[0] = saving_page;
-}
-
 int last_change(int page_index,int *pages, int no_pyhsical_pages){
     static int index = 0;
     pages[index%no_pyhsical_pages] = page_index;
