@@ -12,7 +12,9 @@ int main(int argc, char **argv)
     };
     struct link *start;
     int iteration, i, j;
-    start = (struct link *) calloc(1, sizeof(struct link));
+    start = (struct link *) calloc(1, sizeof(struct link));struct link {
+        int x[SIZE][SIZE];
+    };
     if (!start) {
         printf("Fatal error: Can't allocate memory of %d x %d = %lu\n", SIZE, SIZE, (unsigned long)SIZE*SIZE);
         exit(-1);
