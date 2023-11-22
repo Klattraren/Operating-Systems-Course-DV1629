@@ -59,7 +59,9 @@ int last_change(int page_index,int *pages, int no_pyhsical_pages){
 int optimal_page_swap(int page_index,int *pages, int no_pyhsical_pages,int current_index, int* array_ptr){
     int futhest_away = 0;
     int save_index = 0;
+    //Looping through the pages in the "RAM"
     for (int i = 0; i < no_pyhsical_pages; i++){
+        //Looping through the array to find the page that is furthest away
         for (int j = current_index+1; j < length_of_array; j++){
             //printf("pages[%d] == array_ptr[%d] : %d == %d\n",i,j,pages[i],array_ptr[j]);
             if (pages[i] == array_ptr[j]){
@@ -69,10 +71,15 @@ int optimal_page_swap(int page_index,int *pages, int no_pyhsical_pages,int curre
                 }
                 break;
             }
+            //If the page is not used again then swap it out
+            // else if (j == length_of_array-1){
+            //     save_index = i;
+            //     futhest_away = j;
+            //     break;
+            // }
             else if (j == length_of_array-1){
-                save_index = i;
-                futhest_away = j;
-                break;
+                pages[i] = page_index;
+                return 0;
             }
         }
     }
@@ -93,7 +100,7 @@ int optimal(int* array_ptr, int no_pyhsical_pages, int pages_size){
         page_index = array_ptr[i];
         hit = 0;
 
-        //Fill it up
+        //Fill the "RAM" with pages in the beginning when its empty
         if (used_pages < no_pyhsical_pages){
             for (int j = 0; j<no_pyhsical_pages;j++){
                 if (pages[j] == page_index){
@@ -116,6 +123,7 @@ int optimal(int* array_ptr, int no_pyhsical_pages, int pages_size){
                 }
             }
             if (hit == 0){
+                //Check what page to swap out and swap it
                 optimal_page_swap(page_index,pages,no_pyhsical_pages,i,array_ptr);
                 page_faults++;
             }
