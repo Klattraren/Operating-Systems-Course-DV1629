@@ -9,7 +9,7 @@ int length_of_array;
 // Open a file in read mode
 int* open_file(char* file){
     //fptr = fopen(file, "r");
-    fptr = fopen("mp3d.mem", "r");
+    fptr = fopen(file, "r");
     if (fptr == NULL)
     {
         printf("Cannot open file \n");
@@ -60,9 +60,7 @@ int fifo(int* array_ptr, int no_pyhsical_pages, int pages_size){
 
     //Looping through the array
     for (int i = 0; i < length_of_array; i++){
-        printf("tal: %d\n",array_ptr[i]);
         page_index = ceil(array_ptr[i]/pages_size_tmp)+1;
-        printf("page_index: %d\n",page_index);
         hit = 0;
 
         //Fill it up
@@ -102,11 +100,9 @@ int fifo(int* array_ptr, int no_pyhsical_pages, int pages_size){
 
 int main(int argc, char *argv[]){
     //Taking input from command line
-    // int no_pyhsical_pages = atoi(argv[1]);
-    // int pages_size = atoi(argv[2]);
+    int no_pyhsical_pages = atoi(argv[1]);
+    int pages_size = atoi(argv[2]);
     char* file = argv[3];
-    int no_pyhsical_pages = 4;
-    int pages_size = 256;
 
     //Information print
     printf("No physical pages = %d, page size = %d\n", no_pyhsical_pages, pages_size);
