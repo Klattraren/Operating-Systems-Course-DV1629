@@ -7,7 +7,8 @@ int length_of_array;
 
 
 // Open a file in read mode
-int* open_file(char* file, int pages_size){
+int* open_file(char* file){
+    //fptr = fopen(file, "r");
     fptr = fopen(file, "r");
     if (fptr == NULL)
     {
@@ -33,11 +34,6 @@ int* open_file(char* file, int pages_size){
     for (int i = 0; i < length_of_array; i++) {
         fscanf(fptr, "%d", &number_array[i]);
     }
-
-    //Converting the "adresses" to pages to be able to "look into the future"
-    for (int i = 0; i < length_of_array; i++) {
-        number_array[i] = ceil(number_array[i]/pages_size)+1;
-    }
     
     //Returning the pointer
     return number_array;
@@ -48,41 +44,13 @@ void close_file(){
     fclose(fptr);
 }
 
-//Used to fill up the "RAM" with pages in the beginning when its empty, asme used in fifo
 int last_change(int page_index,int *pages, int no_pyhsical_pages){
     static int index = 0;
     pages[index%no_pyhsical_pages] = page_index;
     index++;
 }
 
-//If a page is already in the "RAM" then move it to the most recent used
-int optimal_page_swap(int page_index,int *pages, int no_pyhsical_pages,int current_index, int* array_ptr){
-    int futhest_away = 0;
-    int save_index = 0;
-    //Looping through the pages in the "RAM"
-    for (int i = 0; i < no_pyhsical_pages; i++){
-        //Looping through the array to find the page that is furthest away
-        for (int j = current_index+1; j < length_of_array; j++){
-            //printf("pages[%d] == array_ptr[%d] : %d == %d\n",i,j,pages[i],array_ptr[j]);
-            if (pages[i] == array_ptr[j]){
-                if (j > futhest_away){
-                    futhest_away = j;
-                    save_index = i;
-                }
-                break;
-            }
-            //If the page is not used again then swap it out
-            else if (j == length_of_array-1){
-                pages[i] = page_index;
-                return 0;
-            }
-        }
-    }
-        pages[save_index] = page_index;
-}
-
-//The optimal algorithm
-int optimal(int* array_ptr, int no_pyhsical_pages, int pages_size){
+int fifo(int* array_ptr, int no_pyhsical_pages, int pages_size){
     int pages[no_pyhsical_pages];
     int pages_size_tmp = pages_size;
     int page_index;
@@ -92,10 +60,10 @@ int optimal(int* array_ptr, int no_pyhsical_pages, int pages_size){
 
     //Looping through the array
     for (int i = 0; i < length_of_array; i++){
-        page_index = array_ptr[i];
+        page_index = ceil(array_ptr[i]/pages_size_tmp)+1;
         hit = 0;
 
-        //Fill the "RAM" with pages in the beginning when its empty
+        //Fill it up
         if (used_pages < no_pyhsical_pages){
             for (int j = 0; j<no_pyhsical_pages;j++){
                 if (pages[j] == page_index){
@@ -118,14 +86,17 @@ int optimal(int* array_ptr, int no_pyhsical_pages, int pages_size){
                 }
             }
             if (hit == 0){
-                //Check what page to swap out and swap it
-                optimal_page_swap(page_index,pages,no_pyhsical_pages,i,array_ptr);
+                last_change(page_index,pages,no_pyhsical_pages);
                 page_faults++;
             }
         }
+
+
     }
     return page_faults;
 }
+
+
 
 int main(int argc, char *argv[]){
     //Taking input from command line
@@ -137,10 +108,10 @@ int main(int argc, char *argv[]){
     printf("No physical pages = %d, page size = %d\n", no_pyhsical_pages, pages_size);
 
     //Opening and loading all the "adresses into an array"
-    int* array_ptr = open_file(file,pages_size);
+    int* array_ptr = open_file(file);
 
     //Running the LRU algorithm
-    int faults = optimal(array_ptr,no_pyhsical_pages,pages_size);
+    int faults = fifo(array_ptr,no_pyhsical_pages,pages_size);
 
     //Printing the result
     printf("Result: %d page faults\n", faults);
