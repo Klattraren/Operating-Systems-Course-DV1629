@@ -1,6 +1,6 @@
 #include <iostream>
 #include "fs.h"
-#include <cmath>
+#include <cstring>
 
 // Help functions
 // finds a free block in the FAT system
@@ -61,29 +61,65 @@ FS::create(std::string filepath)
     int amount_of_blocks = ((file_data.size()+1)/BLOCK_SIZE)+1; //Added null terminatro to string size
     std::cout << "Amount of blocks that will be used: " << amount_of_blocks << "\n";
 
-    
+    //Create new dir entry
     dir_entry new_file;
+    strncpy(new_file.file_name,filepath.c_str(),56);
     new_file.size = file_data.size();
-    new_file.first_blk = find_free_block();
     new_file.type = TYPE_FILE;
+
+    int free_block = find_free_block();
+    if (free_block != -1){
+        new_file.first_blk = free_block;
+    }else{
+        std::cout << "No free blocks\n";
+        return -1;
+    }
+    //Write dir entry to disk
+    int current_block = new_file.first_blk;
+    int next_free_block;
     disk.write(ROOT_BLOCK,(uint8_t*)&new_file);
 
-    for (int i = 0;i<amount_of_blocks;i++){
-        block_to_place_in = find_free_block();
-        std::cout << "Block TO place in: " << block_to_place_in << "\n";
-        if (block_to_place_in != -1){
-            std::cout << "Placing BLock";
+    if (amount_of_blocks > 1){ //If file is larger than one block
+        for (int i = 0; i < amount_of_blocks; i++){ 
+            disk.write(current_block,(uint8_t*)file_data.substr(i*BLOCK_SIZE,BLOCK_SIZE).c_str());
+            next_free_block = find_free_block();
+            //Cheack if there is a free block and memory isn't full
+            if (next_free_block != -1){
+                fat[current_block] = next_free_block;
+                current_block = next_free_block;
+            }else{
+                fat[current_block] = FAT_EOF;
+                std::cout << "No free blocks\n";
+                return -1;
+            }
+
+            //If we are on the last block in the chain, set the last block to EOF
+            if (i == amount_of_blocks-1){
+                fat[current_block] = FAT_EOF;
+            }
         }
+    }else{
+        disk.write(new_file.first_blk,(uint8_t*)file_data.c_str());
+        fat[new_file.first_blk] = FAT_EOF;
     }
-    
     return 0;
 }
+
 
 // cat <filepath> reads the content of a file and prints it on the screen
 int
 FS::cat(std::string filepath)
 {
     std::cout << "FS::cat(" << filepath << ")\n";
+    std::string file_output;
+    dir_entry read_dir_entry;
+    disk.read(ROOT_BLOCK,(uint8_t*)&read_dir_entry);
+    std::cout << "File name: " << read_dir_entry.file_name << "\n";
+    std::cout << "File size: " << read_dir_entry.size << "\n";
+    std::cout << "File type: " << read_dir_entry.type << "\n";
+    std::cout << "File first block: " << read_dir_entry.first_blk << "\n";
+    disk.read(read_dir_entry.first_blk,(uint8_t*)&file_output);
+    std::cout << "File data: " << file_output << "\n";
     return 0;
 }
 
