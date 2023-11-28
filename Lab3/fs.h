@@ -9,6 +9,7 @@
 #define FAT_BLOCK 1
 #define FAT_FREE 0
 #define FAT_EOF -1
+#define NO_BLOCKS 2048
 
 #define TYPE_FILE 0
 #define TYPE_DIR 1
