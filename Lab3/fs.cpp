@@ -48,17 +48,19 @@ FS::format()
 int
 FS::create(std::string filepath)
 {
-    std::cout << "FS::create(" << filepath << ")\n";
+    // std::cout << "FS::create(" << filepath << ")\n";
     int save_free_index = 1;
     dir_entry file_array[DIR_ENTRY_AMOUNT];
     disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
+
     for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+        // std::cout << "\nFile name: " << file_array[i].file_name << "\n";
         if (strcmp(file_array[i].file_name,filepath.c_str()) == 0){
             std::cout << "File already exists\n";
             return -1;
         }else if (strcmp(file_array[i].file_name,"") == 0){
-            int save_free_index = i;
-            std::cout << "Free index: " << save_free_index << "\n";
+            save_free_index = i;
+            // std::cout << "Free index: " << save_free_index << "\n";
             break;
         }
         
@@ -72,9 +74,9 @@ FS::create(std::string filepath)
         file_data += row + "\n";
         }while (!row.empty());
 
-    std::cout << "File size: "<< file_data.size() << "\n";
+    // std::cout << "File size: "<< file_data.size() << "\n";
     int amount_of_blocks = ((file_data.size()+1)/BLOCK_SIZE)+1; //Added null terminatro to string size
-    std::cout << "Amount of blocks that will be used: " << amount_of_blocks << "\n";
+    // std::cout << "Amount of blocks that will be used: " << amount_of_blocks << "\n";
 
     //Create new dir entry
     dir_entry new_file;
@@ -127,16 +129,23 @@ FS::create(std::string filepath)
 int
 FS::cat(std::string filepath)
 {
-    std::cout << "FS::cat(" << filepath << ")\n";
-    std::string file_output;
-    dir_entry read_dir_entry;
-    disk.read(ROOT_BLOCK,(uint8_t*)&read_dir_entry);
-    std::cout << "File name: " << read_dir_entry.file_name << "\n";
-    std::cout << "File size: " << read_dir_entry.size << "\n";
-    std::cout << "File type: " << read_dir_entry.type << "\n";
-    std::cout << "File first block: " << read_dir_entry.first_blk << "\n";
-    disk.read(read_dir_entry.first_blk,(uint8_t*)&file_output);
-    std::cout << "File data: " << file_output << "\n";
+    // std::cout << "FS::cat(" << filepath << ")\n";
+    char file_data[BLOCK_SIZE];
+    dir_entry file_array[DIR_ENTRY_AMOUNT];
+    disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
+    for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+        if (strcmp(file_array[i].file_name,filepath.c_str())==0){
+            std::cout << "File found\n";
+            int block_to_read = file_array[i].first_blk;
+            std::cout << "FAT: " << fat[block_to_read] << "\n";
+            while (fat[block_to_read] != FAT_EOF){
+                disk.read(block_to_read,(uint8_t*)&file_data);
+                std::cout << file_data;
+                block_to_read = fat[block_to_read];
+            }
+        }
+    }
+    
     return 0;
 }
 
@@ -144,7 +153,17 @@ FS::cat(std::string filepath)
 int
 FS::ls()
 {
-    std::cout << "FS::ls()\n";
+    // std::cout << "FS::ls()\n";
+    dir_entry file_array[DIR_ENTRY_AMOUNT];
+    disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
+    std::cout << "file\tsize\n"; 
+    for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+        if (strcmp(file_array[i].file_name,"") == 0){
+            break;
+        }
+        std::cout << file_array[i].file_name << "\t" << file_array[i].size << "\n";
+
+    }
     return 0;
 }
 
