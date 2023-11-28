@@ -18,11 +18,12 @@ FS::find_free_block()
 FS::FS()
 {
     std::cout << "FS::FS()... Creating file system\n";
+    disk.read(FAT_BLOCK,(uint8_t*)fat);
 }
 
 FS::~FS()
 {
-
+    disk.write(FAT_BLOCK,(uint8_t*)fat);
 }
 
 
@@ -135,15 +136,29 @@ FS::cat(std::string filepath)
     disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
     for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,filepath.c_str())==0){
-            std::cout << "File found\n";
+            // std::cout << "File found\n";
             int block_to_read = file_array[i].first_blk;
-            std::cout << "FAT: " << fat[block_to_read] << "\n";
-            while (fat[block_to_read] != FAT_EOF){
+            // std::cout << "FAT: " << fat[block_to_read] << "\n";
+            if (fat[block_to_read] == FAT_EOF){
                 disk.read(block_to_read,(uint8_t*)&file_data);
                 std::cout << file_data;
-                block_to_read = fat[block_to_read];
+                return 0;
             }
+            else{
+                do{
+                    disk.read(block_to_read,(uint8_t*)&file_data);
+                    std::cout << file_data;
+                    block_to_read = fat[block_to_read];
+                }while (fat[block_to_read] != FAT_EOF);
+            }
+        }else{
+            std::cout << "File not found\n";
+            return -1;
         }
+        {
+            /* code */
+        }
+        
     }
     
     return 0;
