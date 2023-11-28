@@ -49,6 +49,11 @@ int
 FS::create(std::string filepath)
 {
     std::cout << "FS::create(" << filepath << ")\n";
+
+    dir_entry load_array[DIR_ENTRY_AMOUNT];
+    disk.read(ROOT_BLOCK,(uint8_t*)&load_array);
+    std::cout << "__: " << sizeof(dir_entry);
+
     std::string file_data;
     std::string row;
     int block_to_place_in;
