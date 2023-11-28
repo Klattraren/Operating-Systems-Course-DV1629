@@ -34,6 +34,7 @@ private:
 public:
     FS();
     ~FS();
+
     // formats the disk, i.e., creates an empty file system
     int format();
     // create <filepath> creates a new file on the disk, the data content is
@@ -68,6 +69,9 @@ public:
     // chmod <accessrights> <filepath> changes the access rights for the
     // file <filepath> to <accessrights>.
     int chmod(std::string accessrights, std::string filepath);
+
+    //OWN ADDED FUNCTIONS
+    int find_free_block();
 };
 
 #endif // __FS_H__

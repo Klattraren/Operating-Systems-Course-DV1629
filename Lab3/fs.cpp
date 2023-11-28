@@ -1,5 +1,19 @@
 #include <iostream>
 #include "fs.h"
+#include <cmath>
+
+// Help functions
+// finds a free block in the FAT system
+int
+FS::find_free_block()
+{
+    for(int i = 2; i < NO_BLOCKS; i++){
+        if(fat[i] == FAT_FREE){
+            return i;
+        }
+    }
+    return -1;
+}
 
 FS::FS()
 {
@@ -11,11 +25,21 @@ FS::~FS()
 
 }
 
+
+
 // formats the disk, i.e., creates an empty file system
 int
 FS::format()
-{
+{   
     std::cout << "FS::format()\n";
+    for(int i = 0; i < NO_BLOCKS; i++){
+        fat[i] = FAT_FREE;
+    }
+    fat[ROOT_BLOCK] = FAT_EOF;
+    fat[FAT_BLOCK] = FAT_EOF;
+    int array[BLOCK_SIZE];
+    array[0] = 0;
+    disk.write(ROOT_BLOCK,(uint8_t*)array);
     return 0;
 }
 
@@ -25,6 +49,33 @@ int
 FS::create(std::string filepath)
 {
     std::cout << "FS::create(" << filepath << ")\n";
+    std::string file_data;
+    std::string row;
+    int block_to_place_in;
+    do {
+        std::getline(std::cin, row);
+        file_data += row + "\n";
+        }while (!row.empty());
+
+    std::cout << "File size: "<< file_data.size() << "\n";
+    int amount_of_blocks = ((file_data.size()+1)/BLOCK_SIZE)+1; //Added null terminatro to string size
+    std::cout << "Amount of blocks that will be used: " << amount_of_blocks << "\n";
+
+    
+    dir_entry new_file;
+    new_file.size = file_data.size();
+    new_file.first_blk = find_free_block();
+    new_file.type = TYPE_FILE;
+    disk.write(ROOT_BLOCK,(uint8_t*)&new_file);
+
+    for (int i = 0;i<amount_of_blocks;i++){
+        block_to_place_in = find_free_block();
+        std::cout << "Block TO place in: " << block_to_place_in << "\n";
+        if (block_to_place_in != -1){
+            std::cout << "Placing BLock";
+        }
+    }
+    
     return 0;
 }
 
