@@ -49,10 +49,20 @@ int
 FS::create(std::string filepath)
 {
     std::cout << "FS::create(" << filepath << ")\n";
-
-    dir_entry load_array[DIR_ENTRY_AMOUNT];
-    disk.read(ROOT_BLOCK,(uint8_t*)&load_array);
-    std::cout << "__: " << sizeof(dir_entry);
+    int save_free_index = 1;
+    dir_entry file_array[DIR_ENTRY_AMOUNT];
+    disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
+    for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+        if (strcmp(file_array[i].file_name,filepath.c_str()) == 0){
+            std::cout << "File already exists\n";
+            return -1;
+        }else if (strcmp(file_array[i].file_name,"") == 0){
+            int save_free_index = i;
+            std::cout << "Free index: " << save_free_index << "\n";
+            break;
+        }
+        
+    }
 
     std::string file_data;
     std::string row;
@@ -82,7 +92,9 @@ FS::create(std::string filepath)
     //Write dir entry to disk
     int current_block = new_file.first_blk;
     int next_free_block;
-    disk.write(ROOT_BLOCK,(uint8_t*)&new_file);
+
+    file_array[save_free_index] = new_file;
+    disk.write(ROOT_BLOCK,(uint8_t*)file_array);
 
     if (amount_of_blocks > 1){ //If file is larger than one block
         for (int i = 0; i < amount_of_blocks; i++){ 
