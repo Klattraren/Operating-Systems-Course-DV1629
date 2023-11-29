@@ -28,23 +28,12 @@ struct dir_entry {
     uint8_t access_rights; // read (0x04), write (0x02), execute (0x01)
 };
 
-struct working_dir
-{
-    uint8_t block;
-};
-
-
 class FS {
 private:
     Disk disk;
     // size of a FAT entry is 2 bytes
     int16_t fat[BLOCK_SIZE/2];
-    // current directory
-    working_dir current_dir;
 
-    void acsess_right_dir(std::string full_path,std::string *filename,std::string *filepath);
-
-    int get_block_from_path(std::string path);
 public:
     FS();
     ~FS();
