@@ -42,6 +42,9 @@ private:
     // current directory
     working_dir current_dir;
 
+    void acsess_right_dir(std::string full_path,std::string *filename,std::string *filepath);
+
+    int get_block_from_path(std::string path);
 public:
     FS();
     ~FS();
