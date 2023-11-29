@@ -216,7 +216,6 @@ FS::create(std::string filepath)
         disk.write(new_file.first_blk,(uint8_t*)file_data.c_str());
         fat[new_file.first_blk] = FAT_EOF;
     }
-    std::cout << "current dir block2: " << current_dir.block << "\n";
     return 0;
 }
 
@@ -235,12 +234,13 @@ FS::cat(std::string filepath)
         std::cout << "Path not found\n";
         return -1;
     }
+
     int file_found = 0;
     char file_data[BLOCK_SIZE];
     dir_entry file_array[DIR_ENTRY_AMOUNT];
-    disk.read(current_dir.block,(uint8_t*)&file_array);
+    disk.read(active_block,(uint8_t*)&file_array);
     for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
-        if (strcmp(file_array[i].file_name,filepath.c_str())==0){
+        if (strcmp(file_array[i].file_name,filename.c_str())==0){
             // std::cout << "File found\n";
             int block_to_read = file_array[i].first_blk;
             // std::cout << "FAT: " << fat[block_to_read] << "\n";
