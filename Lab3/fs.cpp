@@ -135,6 +135,7 @@ int
 FS::cat(std::string filepath)
 {
     // std::cout << "FS::cat(" << filepath << ")\n";
+    int file_found = 0;
     char file_data[BLOCK_SIZE];
     dir_entry file_array[DIR_ENTRY_AMOUNT];
     disk.read(current_dir.block,(uint8_t*)&file_array);
@@ -155,18 +156,18 @@ FS::cat(std::string filepath)
                     block_to_read = fat[block_to_read];
                 }while (fat[block_to_read] != FAT_EOF);
             }
-        }else{
-            std::cout << "File not found\n";
-            return -1;
-        }
-        {
-            /* code */
-        }
+            break;
         
+        }
+    }
+    if (file_found == 0){
+        std::cout << "File not found\n";
+        return -1;
     }
     
     return 0;
 }
+
 
 // ls lists the content in the currect directory (files and sub-directories)
 int
@@ -313,6 +314,13 @@ int
 FS::pwd()
 {
     std::cout << "FS::pwd()\n";
+    const char* path_list;
+    dir_entry file_array[DIR_ENTRY_AMOUNT];
+    disk.read(current_dir.block,(uint8_t*)&file_array);
+    
+    while (current_dir.block != ROOT_BLOCK){
+
+    }
     return 0;
 }
 
