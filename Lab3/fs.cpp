@@ -31,19 +31,45 @@ FS::get_block_from_path(std::string path){
     int seperator_index = path.find_first_of("/");
     std::string option = path.substr(0,seperator_index);
     path = path.substr(seperator_index+1);
-    std::cout << "Option: " << option << "\n";
-    std::cout << "Path: " << path << "\n";
+    // std::cout << "Option: " << option << "\n";
+    // std::cout << "Path: " << path << "\n";
+
+    dir_entry file_array[DIR_ENTRY_AMOUNT];
+    disk.read(current_dir.block,(uint8_t*)&file_array);
 
     if (option == ".."){
-        std::cout << "Going back to parent directory\n";
+        // std::cout << "Going back to parent directory\n";
+        block_to_acsess = file_array[0].first_blk;
     }
 
     if (option == ""){
-        std::cout << "Going back to root directory\n";
+        // std::cout << "Going back to root directory\n";
+        block_to_acsess = ROOT_BLOCK;
     }
 
     if (option == "."){
-        std::cout << "Staying in current directory\n";
+        // std::cout << "Staying in current directory\n";
+        block_to_acsess = current_dir.block;
+    }
+    std::cout << "\n\n";
+    while (strcmp(path.c_str(),"") != 0){
+        seperator_index = path.find_first_of("/");
+        // std::cout << "Seperator index: " << seperator_index << "\n";
+        if (seperator_index == -1){
+            break;
+        }
+        option = path.substr(0,seperator_index);
+        path = path.substr(seperator_index+1);
+        // std::cout << "Option: " << option << "\n";
+        // std::cout << "Path: " << path << "\n";
+        disk.read(block_to_acsess,(uint8_t*)&file_array);
+        for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+            if (strcmp(file_array[i].file_name,option.c_str()) == 0){
+                // std::cout << "Directory is: " << file_array[i].file_name << "\n";
+                block_to_acsess = file_array[i].first_blk;
+                break;
+            }
+        }
     }
     return block_to_acsess;
 }
@@ -104,7 +130,7 @@ FS::create(std::string filepath)
     acsess_right_dir(filepath,&filename,&pre_path);
     std::cout << "File name: " << filename << "\n";
     std::cout << "Path: " << pre_path << "\n";
-    get_block_from_path(pre_path);
+    int active_block = get_block_from_path(pre_path);
 
 
     // std::cout << "FS::create(" << filepath << ")\n";
@@ -275,7 +301,7 @@ FS::cp(std::string sourcepath, std::string destpath)
 
     std::cout << "EEE" << std::endl ;
 
-    int source_index = find_block_from_path(sourcepath);
+    int source_index = find_block_from_name(sourcepath);
     int source_block_to_read = file_array[source_index].first_blk;
     char file_data[BLOCK_SIZE];
 

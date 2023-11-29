@@ -42,6 +42,10 @@ private:
     // current directory
     working_dir current_dir;
 
+    int find_free_block();
+
+    int find_block_from_name(std::string filepath);
+
     void acsess_right_dir(std::string full_path,std::string *filename,std::string *filepath);
 
     int get_block_from_path(std::string path);
@@ -83,11 +87,6 @@ public:
     // chmod <accessrights> <filepath> changes the access rights for the
     // file <filepath> to <accessrights>.
     int chmod(std::string accessrights, std::string filepath);
-
-    //OWN ADDED FUNCTIONS
-    int find_free_block();
-
-    int find_block_from_path(std::string filepath);
 };
 
 #endif // __FS_H__
