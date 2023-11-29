@@ -15,6 +15,7 @@ FS::find_free_block()
     return -1;
 }
 
+
 FS::FS()
 {
     std::cout << "FS::FS()... Creating file system\n";
@@ -169,14 +170,22 @@ int
 FS::ls()
 {
     // std::cout << "FS::ls()\n";
+    std::string entry_type;
+
     dir_entry file_array[DIR_ENTRY_AMOUNT];
     disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
-    std::cout << "file\tsize\n"; 
+    std::cout << "file\tsize\ttype\n"; 
     for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,"") == 0){
             break;
         }
-        std::cout << file_array[i].file_name << "\t" << file_array[i].size << "\n";
+        if (file_array[i].type == TYPE_DIR){
+            entry_type = "dir";
+            }
+        else{
+            entry_type = "file";
+        }
+        std::cout << file_array[i].file_name << "\t" << file_array[i].size << "\t" << entry_type << "\n";
 
     }
     return 0;
@@ -222,7 +231,46 @@ FS::append(std::string filepath1, std::string filepath2)
 int
 FS::mkdir(std::string dirpath)
 {
-    std::cout << "FS::mkdir(" << dirpath << ")\n";
+    int save_free_index = 1;
+    dir_entry file_array[DIR_ENTRY_AMOUNT];
+    disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
+
+    for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+        // std::cout << "\nFile name: " << file_array[i].file_name << "\n";
+        if (strcmp(file_array[i].file_name,dirpath.c_str()) == 0){
+            std::cout << "Directory already exists\n";
+            return -1;
+        }else if (strcmp(file_array[i].file_name,"") == 0){
+            save_free_index = i;
+            // std::cout << "Free index: " << save_free_index << "\n";
+            break;
+        }
+        
+    }
+
+    int directory_block = find_free_block();
+    //Create new dir entry
+    dir_entry new_dir;
+    strncpy(new_dir.file_name,dirpath.c_str(),56);
+    new_dir.size = 0;
+    new_dir.type = TYPE_DIR;
+    new_dir.first_blk = directory_block;
+
+    //Write dir entry to disk
+    file_array[save_free_index] = new_dir;
+    disk.write(ROOT_BLOCK,(uint8_t*)file_array);
+    //Write to fat
+    fat[directory_block] = FAT_EOF;
+    //Write array to disk
+    dir_entry parent_block;
+    parent_block.first_blk = ROOT_BLOCK;
+    parent_block.size = 0;
+    parent_block.type = TYPE_DIR;
+    strncpy(parent_block.file_name,"..",56);
+
+    dir_entry array[BLOCK_SIZE];
+    array[0] = parent_block;
+    disk.write(directory_block,(uint8_t*)array);
     return 0;
 }
 
@@ -231,6 +279,27 @@ int
 FS::cd(std::string dirpath)
 {
     std::cout << "FS::cd(" << dirpath << ")\n";
+    int save_entry_index;
+    dir_entry file_array[DIR_ENTRY_AMOUNT];
+    disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
+
+    //Looping from start of dir entries to find the directory and even ".."
+    for (int i = 0; i < DIR_ENTRY_AMOUNT; i++){
+        // std::cout << "\nFile name: " << file_array[i].file_name << "\n";
+        if (strcmp(file_array[i].file_name,dirpath.c_str()) == 0){
+            std::cout << "FILE FOUND\n";
+            save_entry_index = i;
+            break;
+        }else{
+            std::cout << "File not found\n";
+            return -1;}
+    }
+    //Take out the block number of the directory
+    int directory_block = file_array[save_entry_index].first_blk;
+
+
+
+
     return 0;
 }
 
