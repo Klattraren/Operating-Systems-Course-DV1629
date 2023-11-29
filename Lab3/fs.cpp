@@ -20,6 +20,7 @@ FS::FS()
 {
     std::cout << "FS::FS()... Creating file system\n";
     disk.read(FAT_BLOCK,(uint8_t*)fat);
+    current_dir.block = ROOT_BLOCK;
 }
 
 FS::~FS()
@@ -279,25 +280,26 @@ int
 FS::cd(std::string dirpath)
 {
     std::cout << "FS::cd(" << dirpath << ")\n";
+    std::cout << "Current dir: " << current_dir.block << "\n";
+
     int save_entry_index;
     dir_entry file_array[DIR_ENTRY_AMOUNT];
     disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
 
     //Looping from start of dir entries to find the directory and even ".."
     for (int i = 0; i < DIR_ENTRY_AMOUNT; i++){
-        // std::cout << "\nFile name: " << file_array[i].file_name << "\n";
+        std::cout << "\nFile name: " << file_array[i].file_name << "\n";
         if (strcmp(file_array[i].file_name,dirpath.c_str()) == 0){
+            std::cout << "Directory is: " << file_array[i].file_name << "\n";
             std::cout << "FILE FOUND\n";
             save_entry_index = i;
             break;
         }else{
             std::cout << "File not found\n";
-            return -1;}
+            }
     }
     //Take out the block number of the directory
     int directory_block = file_array[save_entry_index].first_blk;
-
-
 
 
     return 0;
