@@ -293,14 +293,16 @@ FS::ls()
         start_block = 0;}
         
     for (int i = start_block; i < DIR_ENTRY_AMOUNT; i++){
-        if (file_array[i].type == TYPE_DIR){
+        if (strcmp(file_array[i].file_name,"") != 0){
+            if (file_array[i].type == TYPE_FILE){
             std::cout << file_array[i].file_name << "\tfile\t" << file_array[i].size << "\n";
 
-        }
-        else if (file_array[i].type == TYPE_DIR){
-            std::cout << file_array[i].file_name << "\tdir\t-\n";
-
             }
+            else if (file_array[i].type == TYPE_DIR){
+                std::cout << file_array[i].file_name << "\tdir\t-\n";
+
+                }
+        }
 
     }
     return 0;
@@ -459,8 +461,8 @@ FS::mkdir(std::string dirpath)
 {
     int save_free_index = 1;
     dir_entry file_array[DIR_ENTRY_AMOUNT];
+    int block = current_dir.block;
     disk.read(current_dir.block,(uint8_t*)&file_array);
-
     for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
         // std::cout << "\nFile name: " << file_array[i].file_name << "\n";
         if (strcmp(file_array[i].file_name,dirpath.c_str()) == 0){
@@ -504,33 +506,32 @@ FS::mkdir(std::string dirpath)
 int
 FS::cd(std::string dirpath)
 {
-    // std::string pre_path;
-    // std::string dirname;
-    // //checking and separating path to file and path adn also abolute/relative
-    // //Returning the block to place the file in or -1 if path is not valid
-    // separate_name_dir(dirpath,&dirname,&pre_path);
-    // int active_block = get_block_from_path(pre_path);
-    // if (active_block == -1){
-    //     std::cout << "Path not found\n";
-    //     return -1;
-    // }
-
-    // std::cout << "FS::cd(" << active_block << ")\n";
+    std::string pre_path;
+    std::string dirname;
+    //checking and separating path to file and path adn also abolute/relative
+    //Returning the block to place the file in or -1 if path is not valid
+    separate_name_dir(dirpath,&dirname,&pre_path);
+    int active_block = get_block_from_path(pre_path);
+    if (active_block == -1){
+        std::cout << "Path not found\n";
+        return -1;
+    }
+    // std::cout << "Active block: " << active_block << "\n";
+    // std::cout << "Dirname: " << dirname << "\n";
 
     int save_entry_index;
     int file_found = 0;
     dir_entry file_array[DIR_ENTRY_AMOUNT];
 
-    disk.read(current_dir.block,(uint8_t*)&file_array);
-    if (strcmp(dirpath.c_str(),"..") == 0){
-        // std::cout << "Going back to parent directory\n";
-        current_dir.block = file_array[0].first_blk;
+    disk.read(active_block,(uint8_t*)&file_array);
+    if (strcmp(dirname.c_str(),"..") == 0){
+            current_dir.block = active_block;
         return 0;
     }else{
         //Looping from first entry excepth parent
-        for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+        for (int i = 0; i < DIR_ENTRY_AMOUNT; i++){
             // std::cout << "\nFile name: " << file_array[i].file_name << "\n";
-            if (strcmp(file_array[i].file_name,dirpath.c_str()) == 0){
+            if (strcmp(file_array[i].file_name,dirname.c_str()) == 0){
                 // std::cout << "Directory is: " << file_array[i].file_name << "\n";
                 // std::cout << "location FOUND\n";
                 save_entry_index = i;
@@ -539,14 +540,17 @@ FS::cd(std::string dirpath)
             }
         }
         if (file_found == 0){
-        std::cout << "File not found\n";
+        std::cout << "directory not found\n";
         return -1;}
         
-    }
+    // }
     //Take out the block number of the directory
+    std::cout << "Block to go to: " << active_block << "\n";
     current_dir.block = file_array[save_entry_index].first_blk;
+    // current_dir.block = active_block;
 
     return 0;
+}
 }
 
 // pwd prints the full path, i.e., from the root directory, to the current
