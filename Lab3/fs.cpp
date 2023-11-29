@@ -170,11 +170,17 @@ FS::create(std::string filepath)
         std::getline(std::cin, row);
         file_data += row + "\n";
         }while (!row.empty());
+        file_data.pop_back(); //Remove last \n
 
     int amount_of_blocks = ((file_data.size()+1)/BLOCK_SIZE)+1; //Added null terminatro to string size
 
     //Create new dir entry
     dir_entry new_file;
+    std::cout << "FILE LENGTH: " << filename.length()<< "\n";
+    if (filename.length() >= 56){
+        std::cout << "Filename is too long\n";
+        return -1;
+    }
     strncpy(new_file.file_name,filename.c_str(),56);
     new_file.size = file_data.size();
     new_file.type = TYPE_FILE;
@@ -235,14 +241,18 @@ FS::cat(std::string filepath)
         return -1;
     }
 
+    int start_block = 1;
+    if (current_dir.block == ROOT_BLOCK){
+        start_block = 0;}
+
     int file_found = 0;
     char file_data[BLOCK_SIZE];
     dir_entry file_array[DIR_ENTRY_AMOUNT];
     disk.read(active_block,(uint8_t*)&file_array);
-    for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+    for (int i = start_block; i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,filename.c_str())==0){
             // std::cout << "File found\n";
-            int block_to_read = file_array[i].first_blk;
+           int block_to_read = file_array[i].first_blk;
             // std::cout << "FAT: " << fat[block_to_read] << "\n";
             if (fat[block_to_read] == FAT_EOF){
                 disk.read(block_to_read,(uint8_t*)&file_data);
@@ -303,16 +313,38 @@ FS::ls()
 int
 FS::cp(std::string sourcepath, std::string destpath)
 {
+    std::string pre_path_source;
+    std::string filename_source;
+    //checking and separating path to file and path adn also abolute/relative
+    //Returning the block to place the file in or -1 if path is not valid
+    separate_name_dir(sourcepath,&filename_source,&pre_path_source);
+    int active_block_source = get_block_from_path(pre_path_source);
+    if (active_block_source == -1){
+        std::cout << "Path not found\n";
+        return -1;
+    }
+
+    std::string pre_path_dest;
+    std::string filename_dest;
+    //checking and separating path to file and path adn also abolute/relative
+    //Returning the block to place the file in or -1 if path is not valid
+    separate_name_dir(destpath,&filename_dest,&pre_path_dest);
+    int active_block_dest = get_block_from_path(pre_path_dest);
+    if (active_block_dest == -1){
+        std::cout << "Path not found\n";
+        return -1;
+    }
+
     int exist = 0;
     dir_entry file_array[DIR_ENTRY_AMOUNT];
-    disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
+    disk.read(active_block_source,(uint8_t*)&file_array);
     int save_free_index = 1;
     for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
-        std::cout << file_array[i].file_name << ", " << destpath.c_str() << "\n";
+        std::cout << file_array[i].file_name << ", " << filename_dest.c_str() << "\n";
 
-        if (strcmp(file_array[i].file_name,destpath.c_str()) == 0){
-            std::cout << "FS::cp(" << sourcepath << "," << destpath << ")\n";
-            std::cout << "Filename" << destpath.c_str() << "already exist, please choose another name!";
+        if (strcmp(file_array[i].file_name,filename_dest.c_str()) == 0){
+            std::cout << "FS::cp(" << filename_source << "," << filename_dest << ")\n";
+            std::cout << "Filename" << filename_dest.c_str() << "already exist, please choose another name!";
             exist = 1;
             return -1;
         } else if (strcmp(file_array[i].file_name,"") == 0){
@@ -323,7 +355,7 @@ FS::cp(std::string sourcepath, std::string destpath)
 
     std::cout << "EEE" << std::endl ;
 
-    int source_index = find_block_from_name(sourcepath);
+    int source_index = find_block_from_name(filename_source);
     int source_block_to_read = file_array[source_index].first_blk;
     char file_data[BLOCK_SIZE];
 
@@ -331,7 +363,7 @@ FS::cp(std::string sourcepath, std::string destpath)
 
     //Create new dir entry
     dir_entry new_file;
-    strncpy(new_file.file_name,destpath.c_str(),56);
+    strncpy(new_file.file_name,filename_dest.c_str(),56);
     new_file.size = file_array[source_block_to_read].size;
     std::cout << "Size: " << new_file.size << "\n";
     new_file.type = TYPE_FILE;
@@ -348,7 +380,7 @@ FS::cp(std::string sourcepath, std::string destpath)
 
     //Write dir entry to disk
     file_array[save_free_index] = new_file;
-    disk.write(ROOT_BLOCK,(uint8_t*)file_array);
+    disk.write(active_block_dest,(uint8_t*)file_array);
 
     int source_next_block = fat[source_block_to_read];
     int i = 0;
@@ -371,6 +403,7 @@ FS::cp(std::string sourcepath, std::string destpath)
             char substring[BLOCK_SIZE + 1];  // +1 for the null terminator
             std::memcpy(substring, file_data + (i*BLOCK_SIZE), BLOCK_SIZE);
             substring[i*BLOCK_SIZE] = '\0';  // Null-terminate the substring
+            std::cout << "SUBSTRING: " << substring << "\n";
             disk.write(dest_curr_block,(uint8_t*)substring);
 
             next_free_block = find_free_block();
