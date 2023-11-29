@@ -15,6 +15,19 @@ FS::find_free_block()
     return -1;
 }
 
+int
+FS::find_block_from_path(std::string filepath)
+{
+    dir_entry file_array[DIR_ENTRY_AMOUNT];
+    disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
+    for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+        if (strcmp(file_array[i].file_name,filepath.c_str()) == 0){
+            return i;
+        }
+    }
+    return -1;
+}
+
 
 FS::FS()
 {
@@ -156,7 +169,8 @@ FS::cat(std::string filepath)
                     block_to_read = fat[block_to_read];
                 }while (fat[block_to_read] != FAT_EOF);
             }
-            break;
+            file_found = 1;
+            return 0;
         
         }
     }
@@ -200,6 +214,94 @@ FS::ls()
 int
 FS::cp(std::string sourcepath, std::string destpath)
 {
+    int exist = 0;
+    dir_entry file_array[DIR_ENTRY_AMOUNT];
+    disk.read(ROOT_BLOCK,(uint8_t*)&file_array);
+    int save_free_index = 1;
+    for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+        std::cout << file_array[i].file_name << ", " << destpath.c_str() << "\n";
+
+        if (strcmp(file_array[i].file_name,destpath.c_str()) == 0){
+            std::cout << "FS::cp(" << sourcepath << "," << destpath << ")\n";
+            std::cout << "Filename" << destpath.c_str() << "already exist, please choose another name!";
+            exist = 1;
+            return -1;
+        } else if (strcmp(file_array[i].file_name,"") == 0){
+            save_free_index = i;
+            break;
+        }
+    }
+
+    std::cout << "EEE" << std::endl ;
+
+    int source_index = find_block_from_path(sourcepath);
+    int source_block_to_read = file_array[source_index].first_blk;
+    char file_data[BLOCK_SIZE];
+
+    
+
+    //Create new dir entry
+    dir_entry new_file;
+    strncpy(new_file.file_name,destpath.c_str(),56);
+    new_file.size = file_array[source_block_to_read].size;
+    std::cout << "Size: " << new_file.size << "\n";
+    new_file.type = TYPE_FILE;
+
+    int free_block = find_free_block();
+    if (free_block != -1){
+        new_file.first_blk = free_block;
+    }else{
+        std::cout << "No free blocks\n";
+        return -1;
+    }
+    int dest_curr_block = new_file.first_blk;
+    int next_free_block;
+
+    //Write dir entry to disk
+    file_array[save_free_index] = new_file;
+    disk.write(ROOT_BLOCK,(uint8_t*)file_array);
+
+    int source_next_block = fat[source_block_to_read];
+    int i = 0;
+
+    std::cout << "fat[source_block_index]: " << fat[source_block_to_read] << "\n";
+
+    if (fat[source_block_to_read] == FAT_EOF){
+        std::cout << "File is only one block\n";
+        disk.read(source_block_to_read,(uint8_t*)&file_data);
+        std::cout << "File data: " << file_data << "\n";
+        disk.write(dest_curr_block,(uint8_t*)file_data);
+        fat[dest_curr_block] = FAT_EOF;
+        return 0;
+    } else {
+        std::cout << "File is multiple blocks\n";
+        while (fat[source_block_to_read] != FAT_EOF){
+            std::cout << "Copying block: " << source_block_to_read << "\n";
+            disk.read(source_block_to_read,(uint8_t*)&file_data);
+            std::cout << "File data: " << file_data << "\n";
+            char substring[BLOCK_SIZE + 1];  // +1 for the null terminator
+            std::memcpy(substring, file_data + (i*BLOCK_SIZE), BLOCK_SIZE);
+            substring[i*BLOCK_SIZE] = '\0';  // Null-terminate the substring
+            disk.write(dest_curr_block,(uint8_t*)substring);
+
+            next_free_block = find_free_block();
+            if (next_free_block != -1){
+                fat[dest_curr_block] = next_free_block;
+                dest_curr_block = next_free_block;
+            } else {
+                fat[dest_curr_block] = FAT_EOF;
+                std::cout << "No free blocks\n";
+                return -1;
+            }
+            source_block_to_read = fat[source_block_to_read];
+            i++;
+
+        }
+    }
+
+
+
+
     std::cout << "FS::cp(" << sourcepath << "," << destpath << ")\n";
     return 0;
 }

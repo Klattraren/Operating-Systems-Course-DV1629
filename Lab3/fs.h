@@ -83,6 +83,8 @@ public:
 
     //OWN ADDED FUNCTIONS
     int find_free_block();
+
+    int find_block_from_path(std::string filepath);
 };
 
 #endif // __FS_H__
