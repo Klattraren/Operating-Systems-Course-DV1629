@@ -16,7 +16,7 @@ FS::find_free_block()
 }
 
 void
-FS::acsess_right_dir(std::string filepath,std::string *filename,std::string *pre_path){
+FS::separate_name_dir(std::string filepath,std::string *filename,std::string *pre_path){
     int seperator_index = filepath.find_last_of("/");
     *filename = filepath.substr(seperator_index+1);
     *pre_path = filepath.substr(0,seperator_index);
@@ -33,31 +33,29 @@ FS::get_block_from_path(std::string path){
     int seperator_index = path.find_first_of("/");
     std::string option = path.substr(0,seperator_index);
     path = path.substr(seperator_index+1);
-    // std::cout << "Option: " << option << "\n";
-    // std::cout << "Path: " << path << "\n";
 
     dir_entry file_array[DIR_ENTRY_AMOUNT];
     disk.read(current_dir.block,(uint8_t*)&file_array);
 
+    //Check if path is absolute or relative
     if (option == ".."){
         std::cout << "Going back to parent directory\n";
         block_to_acsess = file_array[0].first_blk;
     }
-
     if (option == ""){
         std::cout << "Going back to root directory\n";
         block_to_acsess = ROOT_BLOCK;
     }
-
     if (option == "."){
         std::cout << "Staying in current directory\n";
         block_to_acsess = current_dir.block;
     }
-    std::cout << "\n\n";
-    std::cout << "path to work through: " << path << "\n\n";
+
+
+    int path_found = 0;
     while (strcmp(path.c_str(),"") != 0){
+        path_found = 0;
         seperator_index = path.find_first_of("/");
-        // std::cout << "Seperator index: " << seperator_index << "\n";
         if (seperator_index == -1){
             option = path;
             path = "";
@@ -65,16 +63,18 @@ FS::get_block_from_path(std::string path){
             option = path.substr(0,seperator_index);
             path = path.substr(seperator_index+1);
         }
-        std::cout << "Going into: " << option << "\n";
-        std::cout << "remaining Path : " << path << "\n";
         disk.read(block_to_acsess,(uint8_t*)&file_array);
+
         for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
             if (strcmp(file_array[i].file_name,option.c_str()) == 0){
-                // std::cout << "Directory is: " << file_array[i].file_name << "\n";
                 block_to_acsess = file_array[i].first_blk;
-                std::cout << "want to do: " << file_array[i].first_blk;
+                path_found = 1;
                 break;
             }
+        }
+        if (path_found == 0){
+            std::cout << "Path not found\n";
+            return -1;
         }
     }
     return block_to_acsess;
@@ -134,10 +134,16 @@ FS::create(std::string filepath)
     std::cout << "current dir block1: " << current_dir.block << "\n";
     std::string pre_path;
     std::string filename;
-    acsess_right_dir(filepath,&filename,&pre_path);
+    separate_name_dir(filepath,&filename,&pre_path);
     std::cout << "File name: " << filename << "\n";
     std::cout << "Path: " << pre_path << "\n";
     int active_block = get_block_from_path(pre_path);
+
+    //Error check if relative and absolute path is correct
+    if (active_block == -1){
+        std::cout << "Path not found\n";
+        return -1;
+    }
     std::cout << "\nActive block: " << active_block << "\n";
 
     // std::cout << "FS::create(" << filepath << ")\n";

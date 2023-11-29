@@ -46,7 +46,7 @@ private:
 
     int find_block_from_name(std::string filepath);
 
-    void acsess_right_dir(std::string full_path,std::string *filename,std::string *filepath);
+    void separate_name_dir(std::string full_path,std::string *filename,std::string *filepath);
 
     int get_block_from_path(std::string path);
 public:
