@@ -628,6 +628,8 @@ FS::cd(std::string dirpath)
         std::cout << "Path not found\n";
         return -1;
     }
+    // std::cout << "Active block: " << active_block << "\n";
+    // std::cout << "Dirname: " << dirname << "\n";
 
     int save_entry_index;
     int file_found = 0;
@@ -640,7 +642,10 @@ FS::cd(std::string dirpath)
     }else{
         //Looping from first entry excepth parent
         for (int i = 0; i < DIR_ENTRY_AMOUNT; i++){
+            // std::cout << "\nFile name: " << file_array[i].file_name << "\n";
             if (strcmp(file_array[i].file_name,dirname.c_str()) == 0){
+                // std::cout << "Directory is: " << file_array[i].file_name << "\n";
+                // std::cout << "location FOUND\n";
                 save_entry_index = i;
                 file_found = 1;
                 break;
@@ -652,6 +657,7 @@ FS::cd(std::string dirpath)
         
     // }
     //Take out the block number of the directory
+    std::cout << "Block to go to: " << active_block << "\n";
     current_dir.block = file_array[save_entry_index].first_blk;
     // current_dir.block = active_block;
 
