@@ -86,13 +86,17 @@ FS::get_subdiretory_from_path(std::string path){
             if (strcmp(file_array[i].file_name,option.c_str()) == 0){
                 block_to_acsess = file_array[i].first_blk;
                 path_found = 1;
+                if (file_array[i].type == TYPE_FILE){
+                    std::cout << "Error path contains files in path...";
+                    return -1;
+                }
                 break;
             }
         }
         }
         //If the path is not found return -1
         if (path_found == 0){
-            std::cout << "Path not found\n";
+            std::cout << "Error path not found...\n";
             return -1;
         }
     }
@@ -145,7 +149,6 @@ FS::~FS()
 int
 FS::format()
 {   
-    std::cout << "FS::format()\n";
     for(int i = 0; i < NO_BLOCKS; i++){
         fat[i] = FAT_FREE;
     }
@@ -169,7 +172,7 @@ FS::create(std::string filepath)
     separate_name_dir(filepath,&filename,&pre_path);
     int active_block = get_subdiretory_from_path(pre_path);
     if (active_block == -1){
-        std::cout << "Path not found\n";
+        std::cout << "Error path not found...\n";
         return -1;
     }
 
@@ -190,7 +193,7 @@ FS::create(std::string filepath)
     }
     for (int i = start_index; i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,filepath.c_str()) == 0){
-            std::cout << "File already exists\n";
+            std::cout << "Error ifle already exists...\n";
             return -1;
         }else if (strcmp(file_array[i].file_name,"") == 0){
             save_free_index = i;
@@ -199,7 +202,7 @@ FS::create(std::string filepath)
         
     }
     if (save_free_index == -1){
-        std::cout << "No free space\n";
+        std::cout << "Error no free space...\n";
         return -1;
     }
 
@@ -226,7 +229,7 @@ FS::create(std::string filepath)
     if (free_block != -1){
         new_file.first_blk = free_block;
     }else{
-        std::cout << "No free blocks\n";
+        std::cout << "Error no free blocks...\n";
         return -1;
     }
     //Write dir entry to disk
@@ -241,7 +244,7 @@ FS::create(std::string filepath)
             disk.write(current_block,(uint8_t*)file_data.substr(i*BLOCK_SIZE,BLOCK_SIZE).c_str());
             next_free_block = find_free_block();
             if (next_free_block == -1){
-                std::cout << "Ran out of memory\n";
+                std::cout << "Error ran out of memory...\n";
                 return -1;
             }
             //Cheack if there is a free block and memory isn't full
@@ -250,7 +253,7 @@ FS::create(std::string filepath)
                 current_block = next_free_block;
             }else{
                 fat[current_block] = FAT_EOF;
-                std::cout << "No free blocks\n";
+                std::cout << "Error no free blocks...\n";
                 return -1;
             }
 
@@ -278,7 +281,7 @@ FS::cat(std::string filepath)
     separate_name_dir(filepath,&filename,&pre_path);
     int active_block = get_subdiretory_from_path(pre_path);
     if (active_block == -1){
-        std::cout << "Path not found\n";
+        std::cout << "Error path not found...\n";
         return -1;
     }
 
@@ -294,7 +297,7 @@ FS::cat(std::string filepath)
         if (strcmp(file_array[i].file_name,filename.c_str())==0){
 
            if (file_array[i].type == TYPE_DIR){
-                std::cout << "Destenation is not a file\n";
+                std::cout << "Error destenation is not a file...\n";
                 return -1;
            }
 
@@ -317,7 +320,7 @@ FS::cat(std::string filepath)
         }
     }
     if (file_found == 0){
-        std::cout << "File not found\n";
+        std::cout << "Error file not found...\n";
         return -1;
     }
     
@@ -366,7 +369,7 @@ FS::cp(std::string sourcepath, std::string destpath)
     separate_name_dir(sourcepath,&filename_source,&pre_path_source);
     int active_block_source = get_subdiretory_from_path(pre_path_source);
     if (active_block_source == -1){
-        std::cout << "Path not found\n";
+        std::cout << "Error path not found...\n";
         return -1;
     }
     std::cout << "pre_path_source: " << pre_path_source << "\n";
@@ -622,7 +625,7 @@ FS::mkdir(std::string dirpath)
     separate_name_dir(dirpath,&dirname,&pre_path);
     int active_block = get_subdiretory_from_path(pre_path);
     if (active_block == -1){
-        std::cout << "Path not found\n";
+        std::cout << "Error path not found...\n";
         return -1;
     }
 
@@ -636,7 +639,7 @@ FS::mkdir(std::string dirpath)
 
     if (active_block == ROOT_BLOCK){
             if (strcmp(file_array[1].file_name,dirname.c_str()) == 0){
-                std::cout << "Directory already exists\n";
+                std::cout << "Error directory already exists...\n";
                 return -1;
             }
         
@@ -649,7 +652,7 @@ FS::mkdir(std::string dirpath)
     for (int i = start_index; i < DIR_ENTRY_AMOUNT; i++){
         // std::cout << "\nFile name: " << file_array[i].file_name << "\n";
         if (strcmp(file_array[i].file_name,dirname.c_str()) == 0){
-            std::cout << "Directory already exists\n";
+            std::cout << "Error directory already exists...\n";
             return -1;
         }else if (strcmp(file_array[i].file_name,"") == 0){
             save_free_index = i;
@@ -659,7 +662,7 @@ FS::mkdir(std::string dirpath)
         
     }
     if (save_free_index == -1){
-        std::cout << "No free space\n";
+        std::cout << "Error no free space...\n";
         return -1;
     }
 
@@ -700,12 +703,9 @@ FS::cd(std::string dirpath)
     separate_name_dir(dirpath,&dirname,&pre_path);
     int active_block = get_subdiretory_from_path(pre_path);
     if (active_block == -1){
-        std::cout << "Path not found\n";
+        std::cout << "Error path not found...\n";
         return -1;
     }
-    // std::cout << "Active block: " << active_block << "\n";
-    // std::cout << "Dirname: " << dirname << "\n";
-
     int save_entry_index;
     int file_found = 0;
     dir_entry file_array[DIR_ENTRY_AMOUNT]{};
@@ -718,21 +718,18 @@ FS::cd(std::string dirpath)
         //Looping from first entry excepth parent
         for (int i = 0; i < DIR_ENTRY_AMOUNT; i++){
             if (strcmp(file_array[i].file_name,dirname.c_str()) == 0){
-                // std::cout << "Directory is: " << file_array[i].file_name << "\n";
-                // std::cout << "location FOUND\n";
                 save_entry_index = i;
                 file_found = 1;
-                break;
+                if (file_array[save_entry_index].type == TYPE_FILE){
+                    std::cout << "Error destination is not a directory...\n";
+                    return -1;
+                }else{
+                current_dir.block = file_array[save_entry_index].first_blk;
+                return 0;}
             }
         }
-        if (file_found == 0){
-        std::cout << "directory not found\n";
-        return -1;}
-        
-    // }
-    //Take out the block number of the directory
-    current_dir.block = file_array[save_entry_index].first_blk;
-    return 0;
+    std::cout << "error directory not found...\n";
+    return -1;
 }
 }
 
