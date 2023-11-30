@@ -9,11 +9,12 @@ FS::find_free_block()
 /*Finds the a free block in the FAT system and returns the index for it, 
 if no free block is found it returns -1*/
 {
-    for(int i = 2; i < NO_BLOCKS; i++){
+    for(int i = 3; i < NO_BLOCKS; i++){
         if(fat[i] == FAT_FREE){
             return i;
         }
     }
+    std::cout << "No free blocks\n";
     return -1;
 }
 
@@ -153,7 +154,9 @@ FS::format()
     fat[FAT_BLOCK] = FAT_EOF;
     current_dir.block = ROOT_BLOCK;
     int array[BLOCK_SIZE];
-    array[0] = 0;
+    for (int i = 0; i < BLOCK_SIZE; i++){
+        array[i] = 0;
+    }
     disk.write(ROOT_BLOCK,(uint8_t*)array);
     return 0;
 }
