@@ -292,7 +292,12 @@ FS::cat(std::string filepath)
     disk.read(active_block,(uint8_t*)&file_array);
     for (int i = start_block; i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,filename.c_str())==0){
-            // std::cout << "File found\n";
+
+           if (file_array[i].type == TYPE_DIR){
+                std::cout << "Destenation is not a file\n";
+                return -1;
+           }
+
            int block_to_read = file_array[i].first_blk;
             // std::cout << "FAT: " << fat[block_to_read] << "\n";
             if (fat[block_to_read] == FAT_EOF){
@@ -638,7 +643,10 @@ FS::mkdir(std::string dirpath)
     }
 
     int save_free_index = -1;
-    for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+    int start_index = 1;
+    if (active_block == ROOT_BLOCK){
+        start_index = 0;}
+    for (int i = start_index; i < DIR_ENTRY_AMOUNT; i++){
         // std::cout << "\nFile name: " << file_array[i].file_name << "\n";
         if (strcmp(file_array[i].file_name,dirname.c_str()) == 0){
             std::cout << "Directory already exists\n";
