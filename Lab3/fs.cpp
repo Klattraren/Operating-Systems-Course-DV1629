@@ -9,12 +9,12 @@ FS::find_free_block()
 /*Finds the a free block in the FAT system and returns the index for it, 
 if no free block is found it returns -1*/
 {
-    for(int i = 3; i < NO_BLOCKS; i++){
+    
+    for(int i = 2; i < NO_BLOCKS; i++){
         if(fat[i] == FAT_FREE){
             return i;
         }
     }
-    std::cout << "No free blocks\n";
     return -1;
 }
 
@@ -183,11 +183,16 @@ FS::create(std::string filepath)
     }
     
 
-    int save_free_index = 0;
+    int save_free_index = -1;
     dir_entry file_array[DIR_ENTRY_AMOUNT];
     disk.read(active_block,(uint8_t*)&file_array);
 
-    for (int i = 0; i < DIR_ENTRY_AMOUNT; i++){
+    //Searching if there is space in directory, if not return -1
+    int start_index = 0;
+    if (current_dir.block == ROOT_BLOCK){
+        start_index = 0;
+    }
+    for (int i = start_index; i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,filepath.c_str()) == 0){
             std::cout << "File already exists\n";
             return -1;
@@ -197,7 +202,13 @@ FS::create(std::string filepath)
         }
         
     }
+    if (save_free_index == -1){
+        std::cout << "No free space\n";
+        return -1;
+    }
 
+
+    //Reading in the user inputed file data
     std::string file_data;
     std::string row;
     int block_to_place_in;
@@ -233,6 +244,10 @@ FS::create(std::string filepath)
         for (int i = 0; i < amount_of_blocks; i++){ 
             disk.write(current_block,(uint8_t*)file_data.substr(i*BLOCK_SIZE,BLOCK_SIZE).c_str());
             next_free_block = find_free_block();
+            if (next_free_block == -1){
+                std::cout << "Ran out of memory\n";
+                return -1;
+            }
             //Cheack if there is a free block and memory isn't full
             if (next_free_block != -1){
                 fat[current_block] = next_free_block;
