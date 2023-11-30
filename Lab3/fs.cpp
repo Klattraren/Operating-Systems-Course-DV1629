@@ -21,10 +21,14 @@ void
 FS::separate_name_dir(std::string filepath,std::string *filename,std::string *pre_path){
     /*This function separates the filname from the actual path*/
     int seperator_index = filepath.find_last_of("/");
-    *filename = filepath.substr(seperator_index+1);
-    *pre_path = filepath.substr(0,seperator_index);
-    // std::cout << "filename is: " << filename <<"\n";
-    // std::cout << "path is: " << pre_path << "\n";
+    std::string tmp_filename = filepath.substr(seperator_index+1);
+    if (strcasecmp(tmp_filename.c_str(),"..") == 0){
+        *filename = "";
+        *pre_path = filepath;
+    }else{
+        *filename = tmp_filename;
+        *pre_path = filepath.substr(0,seperator_index);
+    }
     
 }
 
@@ -41,10 +45,11 @@ FS::get_subdiretory_from_path(std::string path){
     dir_entry file_array[DIR_ENTRY_AMOUNT];
     disk.read(current_dir.block,(uint8_t*)&file_array);
 
-    //Check if path is absolute or relative
+    // //Check if path is backtracing
     if (option == ".."){
         block_to_acsess = file_array[0].first_blk;
     }
+    //if path is absolute
     if (option == ""){
         block_to_acsess = ROOT_BLOCK;
     }
@@ -59,9 +64,9 @@ FS::get_subdiretory_from_path(std::string path){
     //Cheking if enterd path is valid
     int path_found = 0;
     while (strcmp(path.c_str(),"") != 0){
+        disk.read(block_to_acsess,(uint8_t*)&file_array);
         path_found = 0;
         seperator_index = path.find_first_of("/");
-
         //Check if path is only one block meaning we are done
         if (seperator_index == -1){
             option = path;
@@ -71,8 +76,11 @@ FS::get_subdiretory_from_path(std::string path){
             path = path.substr(seperator_index+1);
         }
 
+        if (option == ".."){
+            block_to_acsess = file_array[0].first_blk;
+            path_found = 1;
+        }else{
         //Reading in the active block and looping through the dir entries
-        disk.read(block_to_acsess,(uint8_t*)&file_array);
         for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
             if (strcmp(file_array[i].file_name,option.c_str()) == 0){
                 block_to_acsess = file_array[i].first_blk;
@@ -80,7 +88,7 @@ FS::get_subdiretory_from_path(std::string path){
                 break;
             }
         }
-
+        }
         //If the path is not found return -1
         if (path_found == 0){
             std::cout << "Path not found\n";
@@ -371,7 +379,6 @@ FS::cp(std::string sourcepath, std::string destpath)
     char file_data[BLOCK_SIZE];
 
     
-
     //Create new dir entry
     dir_entry new_file;
     strncpy(new_file.file_name,filename_dest.c_str(),56);
@@ -646,7 +653,6 @@ FS::cd(std::string dirpath)
     }else{
         //Looping from first entry excepth parent
         for (int i = 0; i < DIR_ENTRY_AMOUNT; i++){
-            // std::cout << "\nFile name: " << file_array[i].file_name << "\n";
             if (strcmp(file_array[i].file_name,dirname.c_str()) == 0){
                 // std::cout << "Directory is: " << file_array[i].file_name << "\n";
                 // std::cout << "location FOUND\n";
