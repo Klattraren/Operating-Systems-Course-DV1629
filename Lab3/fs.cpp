@@ -6,6 +6,8 @@
 // finds a free block in the FAT system
 int
 FS::find_free_block()
+/*Finds the a free block in the FAT system and returns the index for it, 
+if no free block is found it returns -1*/
 {
     for(int i = 2; i < NO_BLOCKS; i++){
         if(fat[i] == FAT_FREE){
@@ -17,6 +19,7 @@ FS::find_free_block()
 
 void
 FS::separate_name_dir(std::string filepath,std::string *filename,std::string *pre_path){
+    /*This function separates the filname from the actual path*/
     int seperator_index = filepath.find_last_of("/");
     *filename = filepath.substr(seperator_index+1);
     *pre_path = filepath.substr(0,seperator_index);
@@ -26,8 +29,9 @@ FS::separate_name_dir(std::string filepath,std::string *filename,std::string *pr
 }
 
 int
-FS::get_block_from_path(std::string path){
-    
+FS::get_subdiretory_from_path(std::string path){
+    /*Function takes path as inparameter and returns the sub-directory block or root
+    that the path leeds to*/
     int block_to_acsess = current_dir.block;
     int seperator_index = path.find_first_of("/");
     std::string option = path.substr(0,seperator_index);
@@ -143,7 +147,7 @@ FS::create(std::string filepath)
     //checking and separating path to file and path adn also abolute/relative
     //Returning the block to place the file in or -1 if path is not valid
     separate_name_dir(filepath,&filename,&pre_path);
-    int active_block = get_block_from_path(pre_path);
+    int active_block = get_subdiretory_from_path(pre_path);
     if (active_block == -1){
         std::cout << "Path not found\n";
         return -1;
@@ -236,7 +240,7 @@ FS::cat(std::string filepath)
     //checking and separating path to file and path adn also abolute/relative
     //Returning the block to place the file in or -1 if path is not valid
     separate_name_dir(filepath,&filename,&pre_path);
-    int active_block = get_block_from_path(pre_path);
+    int active_block = get_subdiretory_from_path(pre_path);
     if (active_block == -1){
         std::cout << "Path not found\n";
         return -1;
@@ -319,7 +323,7 @@ FS::cp(std::string sourcepath, std::string destpath)
     //checking and separating path to file and path adn also abolute/relative
     //Returning the block to place the file in or -1 if path is not valid
     separate_name_dir(sourcepath,&filename_source,&pre_path_source);
-    int active_block_source = get_block_from_path(pre_path_source);
+    int active_block_source = get_subdiretory_from_path(pre_path_source);
     if (active_block_source == -1){
         std::cout << "Path not found\n";
         return -1;
@@ -332,7 +336,7 @@ FS::cp(std::string sourcepath, std::string destpath)
     //checking and separating path to file and path adn also abolute/relative
     //Returning the block to place the file in or -1 if path is not valid
     separate_name_dir(destpath,&filename_dest,&pre_path_dest);
-    int active_block_dest = get_block_from_path(pre_path_dest);
+    int active_block_dest = get_subdiretory_from_path(pre_path_dest);
     if (active_block_dest == -1){
         std::cout << "Path not found\n";
         return -1;
@@ -446,7 +450,7 @@ FS::mv(std::string sourcepath, std::string destname)
     //checking and separating path to file and path adn also abolute/relative
     //Returning the block to place the file in or -1 if path is not valid
     separate_name_dir(sourcepath,&filename_source,&pre_path_source);
-    int active_block_source = get_block_from_path(pre_path_source);
+    int active_block_source = get_subdiretory_from_path(pre_path_source);
     if (active_block_source == -1){
         std::cout << "Path not found\n";
         return -1;
@@ -503,7 +507,7 @@ FS::rm(std::string filepath)
     //checking and separating path to file and path adn also abolute/relative
     //Returning the block to place the file in or -1 if path is not valid
     separate_name_dir(filepath,&filename, &pre_path);
-    int active_block = get_block_from_path(pre_path);
+    int active_block = get_subdiretory_from_path(pre_path);
     if (active_block == -1){
         std::cout << "Path not found\n";
         return -1;
@@ -623,7 +627,7 @@ FS::cd(std::string dirpath)
     //checking and separating path to file and path adn also abolute/relative
     //Returning the block to place the file in or -1 if path is not valid
     separate_name_dir(dirpath,&dirname,&pre_path);
-    int active_block = get_block_from_path(pre_path);
+    int active_block = get_subdiretory_from_path(pre_path);
     if (active_block == -1){
         std::cout << "Path not found\n";
         return -1;
@@ -657,10 +661,7 @@ FS::cd(std::string dirpath)
         
     // }
     //Take out the block number of the directory
-    std::cout << "Block to go to: " << active_block << "\n";
     current_dir.block = file_array[save_entry_index].first_blk;
-    // current_dir.block = active_block;
-
     return 0;
 }
 }
