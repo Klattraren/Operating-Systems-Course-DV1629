@@ -97,6 +97,19 @@ FS::get_subdiretory_from_path(std::string path){
     }
     return block_to_acsess;
 }
+int
+FS::is_name_valid(std::string name){
+    if (name.length() >= 56){
+        std::cout << "Name is too long\n";
+        return -1;
+    }
+    else if (name.length() == 0)
+    {
+        std::cout << "Name is empty\n";
+        return -1;
+    }
+    return 0;
+}
 
 int
 FS::find_block_from_name(std::string filename)
@@ -161,6 +174,12 @@ FS::create(std::string filepath)
         return -1;
     }
 
+    //Check if name is valid
+    if (is_name_valid(filename) == -1){
+        return -1;
+    }
+    
+
     int save_free_index = 0;
     dir_entry file_array[DIR_ENTRY_AMOUNT];
     disk.read(active_block,(uint8_t*)&file_array);
@@ -189,11 +208,6 @@ FS::create(std::string filepath)
 
     //Create new dir entry
     dir_entry new_file;
-    std::cout << "FILE LENGTH: " << filename.length()<< "\n";
-    if (filename.length() >= 56){
-        std::cout << "Filename is too long\n";
-        return -1;
-    }
     strncpy(new_file.file_name,filename.c_str(),56);
     new_file.size = file_data.size();
     new_file.type = TYPE_FILE;
@@ -582,6 +596,22 @@ FS::append(std::string filepath1, std::string filepath2)
 int
 FS::mkdir(std::string dirpath)
 {
+    std::string pre_path;
+    std::string dirname;
+    //checking and separating path to file and path adn also abolute/relative
+    //Returning the block to place the file in or -1 if path is not valid
+    separate_name_dir(dirpath,&dirname,&pre_path);
+    int active_block = get_subdiretory_from_path(pre_path);
+    if (active_block == -1){
+        std::cout << "Path not found\n";
+        return -1;
+    }
+
+    //Check if name is valid
+    if (is_name_valid(dirname) == -1){
+        return -1;
+    }
+
     int save_free_index = 1;
     dir_entry file_array[DIR_ENTRY_AMOUNT];
     int block = current_dir.block;
