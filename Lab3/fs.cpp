@@ -18,6 +18,14 @@ if no free block is found it returns -1*/
     return -1;
 }
 
+int
+FS::is_root(int block){
+    if (block == ROOT_BLOCK){
+        return 0;
+    }
+    return 1;
+}
+
 void
 FS::separate_name_dir(std::string filepath,std::string *filename,std::string *pre_path){
     /*This function separates the filname from the actual path*/
@@ -82,7 +90,7 @@ FS::get_subdiretory_from_path(std::string path){
             path_found = 1;
         }else{
         //Reading in the active block and looping through the dir entries
-        for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+        for (int i = is_root(block_to_acsess); i < DIR_ENTRY_AMOUNT; i++){
             if (strcmp(file_array[i].file_name,option.c_str()) == 0){
                 block_to_acsess = file_array[i].first_blk;
                 path_found = 1;
@@ -96,7 +104,6 @@ FS::get_subdiretory_from_path(std::string path){
         }
         //If the path is not found return -1
         if (path_found == 0){
-            std::cout << "Error path not found...\n";
             return -1;
         }
     }
@@ -187,11 +194,7 @@ FS::create(std::string filepath)
     disk.read(active_block,(uint8_t*)&file_array);
 
     //Searching if there is space in directory, if not return -1
-    int start_index = 0;
-    if (current_dir.block == ROOT_BLOCK){
-        start_index = 0;
-    }
-    for (int i = start_index; i < DIR_ENTRY_AMOUNT; i++){
+    for (int i = is_root(active_block); i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,filepath.c_str()) == 0){
             std::cout << "Error ifle already exists...\n";
             return -1;
@@ -205,7 +208,6 @@ FS::create(std::string filepath)
         std::cout << "Error no free space...\n";
         return -1;
     }
-
 
     //Reading in the user inputed file data
     std::string file_data;
@@ -293,7 +295,7 @@ FS::cat(std::string filepath)
     char file_data[BLOCK_SIZE];
     dir_entry file_array[DIR_ENTRY_AMOUNT]{};
     disk.read(active_block,(uint8_t*)&file_array);
-    for (int i = start_block; i < DIR_ENTRY_AMOUNT; i++){
+    for (int i = is_root(active_block); i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,filename.c_str())==0){
 
            if (file_array[i].type == TYPE_DIR){
@@ -341,7 +343,7 @@ FS::ls()
     if (current_dir.block == ROOT_BLOCK){
         start_block = 0;}
         
-    for (int i = start_block; i < DIR_ENTRY_AMOUNT; i++){
+    for (int i = is_root(current_dir.block); i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,"") != 0){
             if (file_array[i].type == TYPE_FILE){
             std::cout << file_array[i].file_name << "\tfile\t" << file_array[i].size << "\n";
@@ -637,22 +639,10 @@ FS::mkdir(std::string dirpath)
     dir_entry file_array[DIR_ENTRY_AMOUNT]{};
     disk.read(active_block,(uint8_t*)&file_array);
 
-    if (active_block == ROOT_BLOCK){
-            if (strcmp(file_array[1].file_name,dirname.c_str()) == 0){
-                std::cout << "Error directory already exists...\n";
-                return -1;
-            }
-        
-    }
-
     int save_free_index = -1;
-    int start_index = 1;
-    if (active_block == ROOT_BLOCK){
-        start_index = 0;}
-    for (int i = start_index; i < DIR_ENTRY_AMOUNT; i++){
-        // std::cout << "\nFile name: " << file_array[i].file_name << "\n";
+    for (int i = is_root(active_block); i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,dirname.c_str()) == 0){
-            std::cout << "Error directory already exists...\n";
+            std::cout << "Error name already exists...\n";
             return -1;
         }else if (strcmp(file_array[i].file_name,"") == 0){
             save_free_index = i;
@@ -711,17 +701,18 @@ FS::cd(std::string dirpath)
     dir_entry file_array[DIR_ENTRY_AMOUNT]{};
 
     disk.read(active_block,(uint8_t*)&file_array);
-    if (strcmp(dirname.c_str(),"..") == 0){
+
+    if ((strcmp(dirpath.c_str(),"..") == 0)||(strcmp(dirname.c_str(),"") == 0)){
             current_dir.block = active_block;
         return 0;
     }else{
         //Looping from first entry excepth parent
-        for (int i = 0; i < DIR_ENTRY_AMOUNT; i++){
+        for (int i = is_root(active_block); i < DIR_ENTRY_AMOUNT; i++){
             if (strcmp(file_array[i].file_name,dirname.c_str()) == 0){
                 save_entry_index = i;
                 file_found = 1;
                 if (file_array[save_entry_index].type == TYPE_FILE){
-                    std::cout << "Error destination is not a directory...\n";
+                    std::cout << "Error destination is not a directory, can't change directory...\n";
                     return -1;
                 }else{
                 current_dir.block = file_array[save_entry_index].first_blk;

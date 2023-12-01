@@ -51,6 +51,8 @@ private:
     int get_subdiretory_from_path(std::string path);
 
     int is_name_valid(std::string name);
+
+    int is_root(int block);
 public:
     FS();
     ~FS();
