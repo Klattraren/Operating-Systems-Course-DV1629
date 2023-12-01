@@ -487,7 +487,7 @@ FS::cp(std::string sourcepath, std::string destpath)
 // mv <sourcepath> <destpath> renames the file <sourcepath> to the name <destpath>,
 // or moves the file <sourcepath> to the directory <destpath> (if dest is a directory)
 int
-FS::mv(std::string sourcepath, std::string destname)
+FS::mv(std::string sourcepath, std::string destpath)
 {
 
     std::string pre_path_source;
@@ -503,42 +503,102 @@ FS::mv(std::string sourcepath, std::string destname)
 
     std::cout << "active_block_source: " << active_block_source << "\n";
 
-    dir_entry file_array[DIR_ENTRY_AMOUNT]{};
-    disk.read(active_block_source,(uint8_t*)file_array);
+    std::string pre_path_dest;
+    std::string destname;
+    //checking and separating path to file and path adn also abolute/relative
+    //Returning the block to place the file in or -1 if path is not valid
+    separate_name_dir(destpath,&destname,&pre_path_dest);
+    int active_block_dest = get_subdiretory_from_path(pre_path_dest);
+    if (active_block_dest == -1){
+        std::cout << "Path not found\n";
+        return -1;
+    }
     
-    int dir_entry_index = -1;
+    std::cout << "active_block_dest: " << active_block_dest << "\n";
 
-    std::cout << "file array: " << file_array[0].file_name << "\n";
+    
+    dir_entry file_array_source[DIR_ENTRY_AMOUNT];
+    disk.read(active_block_source,(uint8_t*)file_array_source);
+    
 
-    for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
-        if (strcmp(file_array[i].file_name,filename_source.c_str()) == 0){
+    std::cout << "file array: " << file_array_source[0].file_name << "\n";
+
+    int source_start_block = 1;
+    if (active_block_source == ROOT_BLOCK){
+        source_start_block = 0;}
+
+    int source_dir_entry_index = -1;
+    for (int i = source_start_block; i < DIR_ENTRY_AMOUNT; i++){
+        if (strcmp(file_array_source[i].file_name,filename_source.c_str()) == 0){
             std::cout << "Source file found\n";
-            dir_entry_index = i;
-        } else if (file_array[i].file_name,destname.c_str() == 0){
+            source_dir_entry_index = i;
+        } else if (file_array_source[i].file_name,destname.c_str() == 0){
             std::cout << "Destination path already exists!\n";
             return -1;
         } 
     }
-    int source_block_to_read = file_array[dir_entry_index].first_blk;
-    std::cout << "Dir index: " << dir_entry_index << "\n";
-    std::cout << "Source block to read: " << source_block_to_read << "\n";
 
-    if (file_array[source_block_to_read].type == TYPE_DIR){
-        std::cout << "Source is a directory!\n";
-        return -1;
-    } else if  (file_array[source_block_to_read].type == TYPE_FILE){
-        std::cout << "Source is a file!\n";
-        std::cout << "Source index: " << dir_entry_index << "\n";
-        strncpy(file_array[dir_entry_index].file_name, destname.c_str(),56);
-        std::cout << "New file name: " << file_array[dir_entry_index].file_name << "\n";
-        disk.write(active_block_source,(uint8_t*)file_array);
+
+
+    dir_entry file_array_dest[DIR_ENTRY_AMOUNT];
+    disk.read(active_block_dest,(uint8_t*)file_array_dest);
+    
+    std::cout << "dest file array: " << file_array_dest[0].file_name << "\n";
+
+    int dest_start_block = 1;
+    if (active_block_dest == ROOT_BLOCK){
+        dest_start_block = 0;}
+
+
+    int dest_dir_entry_index = -1;
+    int save_free_index = -1;
+    int dir_block = -1;
+    int dest_path_type = TYPE_FILE;
+
+
+    for (int i = dest_start_block; i < DIR_ENTRY_AMOUNT; i++){
+        if (strcmp(file_array_dest[i].file_name,destname.c_str()) == 0){
+            if (file_array_dest[i].type == TYPE_DIR) {
+                std::cout << "Destination is a directory\n";
+                dest_path_type = TYPE_DIR;
+                dir_block = file_array_dest[i].first_blk; 
+            } else {
+                std::cout << "File already exists!\n";
+                return -1;
+            }
+        } else if (save_free_index != -1 && strcmp( file_array_dest[i].file_name,"") == 0){
+            save_free_index = i;
+            break;
+        } 
+    }    
+
+    if (dest_path_type == TYPE_FILE){
+        
+
+
+        std::cout << "Renaming file\n";
+        std::cout << "Source index: " << source_dir_entry_index << "\n";
+        strncpy(file_array_source[source_dir_entry_index].file_name, destpath.c_str(),56);
+        std::cout << "New file name: " << file_array_source[source_dir_entry_index].file_name << "\n";
+        disk.write(active_block_source,(uint8_t*)file_array_source);        
 
     } else {
-        std::cout << "Invalid file type!\n";
-        return -1;
+        std::cout << "Moving file to: " << destpath << "\n";
+        disk.read(dir_block,(uint8_t*)file_array_dest);
+        
+        file_array_dest[save_free_index] = file_array_source[source_dir_entry_index];
+        std::cout << "File name: " << file_array_dest[save_free_index].file_name << "\n";
+        std::cout << "active_block_dest: " << active_block_dest << "\n";
+        disk.write(dir_block,(uint8_t*)file_array_dest);
+
+        // dir_entry empty_entry;
+        // file_array_source[source_dir_entry_index] = empty_entry;
+        // disk.write(active_block_source,(uint8_t*)file_array_source);
+        
+
     }
 
-    std::cout << "FS::mv(" << sourcepath << "," << destname << ")\n";
+    std::cout << "FS::mv(" << sourcepath << "," << destpath << ")\n";
     return 0;
 }
 
@@ -561,7 +621,7 @@ FS::rm(std::string filepath)
     std::cout << "active_block_source: " << active_block << "\n";
 
 
-    dir_entry file_array[DIR_ENTRY_AMOUNT]{};
+    dir_entry file_array[DIR_ENTRY_AMOUNT];
     disk.read(active_block,(uint8_t*)file_array);
     
     int dir_entry_index = -1;
