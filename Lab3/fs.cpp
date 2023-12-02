@@ -126,9 +126,14 @@ FS::is_name_valid(std::string name){
 int
 FS::find_block_from_name(std::string filename)
 {
+    int start_index = 1;
+    if (current_dir.block == ROOT_BLOCK){
+        start_index = 0;
+    }
+
     dir_entry file_array[DIR_ENTRY_AMOUNT];
     disk.read(current_dir.block,(uint8_t*)&file_array);
-    for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+    for (int i = start_index; i < DIR_ENTRY_AMOUNT; i++){
         // std::cout << "File name: " << file_array[i].file_name << "\n";
         if (strcmp(file_array[i].file_name,filename.c_str()) == 0){
             return i;
@@ -566,16 +571,11 @@ FS::mv(std::string sourcepath, std::string destpath)
                 std::cout << "File already exists!\n";
                 return -1;
             }
-        } else if (save_free_index != -1 && strcmp( file_array_dest[i].file_name,"") == 0){
-            save_free_index = i;
-            break;
         } 
     }    
 
     if (dest_path_type == TYPE_FILE){
         
-
-
         std::cout << "Renaming file\n";
         std::cout << "Source index: " << source_dir_entry_index << "\n";
         strncpy(file_array_source[source_dir_entry_index].file_name, destpath.c_str(),56);
@@ -584,16 +584,34 @@ FS::mv(std::string sourcepath, std::string destpath)
 
     } else {
         std::cout << "Moving file to: " << destpath << "\n";
+        for (int i = 1; i < DIR_ENTRY_AMOUNT; i++){
+            if (strcmp(file_array_dest[i].file_name,"") == 0){
+                save_free_index = i;
+                break;
+            }
+        }
+
+
         disk.read(dir_block,(uint8_t*)file_array_dest);
-        
+
+        std::cout << "Copying file from source to destination\n";
+        std::cout << "Source file name: " << file_array_source[source_dir_entry_index].file_name << "\n";
+        std::cout << "Destination index: " << save_free_index << "\n";
+
         file_array_dest[save_free_index] = file_array_source[source_dir_entry_index];
+
+        std::cout << "Copied file name: " << file_array_dest[save_free_index].file_name << "\n";
+        std::cout << "active_block_dest: " << active_block_dest << "\n";
+
+
+
         std::cout << "File name: " << file_array_dest[save_free_index].file_name << "\n";
         std::cout << "active_block_dest: " << active_block_dest << "\n";
         disk.write(dir_block,(uint8_t*)file_array_dest);
 
-        // dir_entry empty_entry;
-        // file_array_source[source_dir_entry_index] = empty_entry;
-        // disk.write(active_block_source,(uint8_t*)file_array_source);
+        dir_entry empty_entry;
+        file_array_source[source_dir_entry_index] = empty_entry;
+        disk.write(active_block_source,(uint8_t*)file_array_source);
         
 
     }
@@ -650,15 +668,15 @@ FS::rm(std::string filepath)
         std::cout << "File deleted\n";
         return 0;
     } 
-    // else {
-    //     std::cout << "File is multiple blocks\n";
-    //     while (fat[block_to_read] != FAT_EOF){
-    //         std::cout << "Deleting block: " << block_to_read << "\n";
-    //         disk.write(block_to_read,(uint8_t*)&zeros);
-    //         fat[block_to_read] = FAT_FREE;
-    //         block_to_read = fat[block_to_read];
-    //     }
-    // }
+    else {
+        std::cout << "File is multiple blocks\n";
+        while (fat[block_to_read] != FAT_EOF){
+            std::cout << "Deleting block: " << block_to_read << "\n";
+            disk.write(block_to_read,(uint8_t*)&zeros);
+            fat[block_to_read] = FAT_FREE;
+            block_to_read = fat[block_to_read];
+        }
+    }
 
 
 
@@ -671,7 +689,173 @@ FS::rm(std::string filepath)
 int
 FS::append(std::string filepath1, std::string filepath2)
 {
-    std::cout << "FS::append(" << filepath1 << "," << filepath2 << ")\n";
+    std::string pre_path_1;
+    std::string filename_1;
+    //checking and separating path to file and path adn also abolute/relative
+    //Returning the block to place the file in or -1 if path is not valid
+    separate_name_dir(filepath1,&filename_1,&pre_path_1);
+    int active_block_1 = get_subdiretory_from_path(pre_path_1);
+    if (active_block_1 == -1){
+        std::cout << "Error path not found...\n";
+        return -1;
+    }
+
+    //Check if name is valid
+    if (is_name_valid(filename_1) == -1){
+        return -1;
+    }
+
+    std::string pre_path_2;
+    std::string filename_2;
+    //checking and separating path to file and path adn also abolute/relative
+    //Returning the block to place the file in or -1 if path is not valid
+    separate_name_dir(filepath2,&filename_2,&pre_path_2);
+    int active_block_2 = get_subdiretory_from_path(pre_path_2);
+    if (active_block_2 == -1){
+        std::cout << "Error path not found...\n";
+        return -1;
+    }
+
+    //Check if name is valid
+    if (is_name_valid(filename_2) == -1){
+        return -1;
+    }
+
+    // Locate index of file 1
+
+    int start_block_1 = 1;
+    if (active_block_1 == ROOT_BLOCK){
+        start_block_1 = 0;}
+
+    dir_entry file_array_1[DIR_ENTRY_AMOUNT];
+    disk.read(active_block_1,(uint8_t*)file_array_1);
+    int dir_entry_index_1 = -1;
+
+    for (int i = start_block_1; i < DIR_ENTRY_AMOUNT; i++){
+        if (strcmp(file_array_1[i].file_name,filename_1.c_str()) == 0){
+            if (file_array_1[i].type == TYPE_DIR){
+                std::cout << "Error source is not a file...\n";
+                return -1;
+            } else {
+                std::cout << "File found\n";
+                dir_entry_index_1 = i;
+                break;
+            }
+        }  
+    }
+
+    // Locate index of file 2
+
+    int start_block_2 = 1;
+    if (active_block_2 == ROOT_BLOCK){
+        start_block_2 = 0;}
+    
+    dir_entry file_array_2[DIR_ENTRY_AMOUNT];
+    disk.read(active_block_2,(uint8_t*)file_array_2);
+    int dir_entry_index_2 = -1;
+
+    for (int i = start_block_2; i < DIR_ENTRY_AMOUNT; i++){
+        if (strcmp(file_array_2[i].file_name,filename_2.c_str()) == 0){
+            if (file_array_2[i].type == TYPE_DIR){
+                std::cout << "Error destination is not a file...\n";
+                return -1;
+            } else {
+                std::cout << "File found\n";
+                dir_entry_index_2 = i;
+                break;
+            }
+        }  
+    }
+
+    int block_to_read_1 = file_array_1[dir_entry_index_1].first_blk;
+    int block_to_read_2 = file_array_2[dir_entry_index_2].first_blk;
+    char file_data_1[BLOCK_SIZE];
+    char file_data_2[BLOCK_SIZE];
+
+    if (fat[block_to_read_2] == FAT_EOF){
+        disk.read(block_to_read_2,(uint8_t*)&file_data_2);
+        std::string file_2_str(file_data_2);
+        if (file_2_str.find_first_of("\n") != std::string::npos){
+            file_2_str.erase(file_2_str.find_first_of("\n"));
+        }
+        
+        if (fat[block_to_read_1] == FAT_EOF){
+            disk.read(block_to_read_1,(uint8_t*)&file_data_1);
+            std::string file_1_str(file_data_1);
+            std::string appended_file = file_2_str + file_1_str;
+            disk.write(block_to_read_2,(uint8_t*)appended_file.c_str());
+            file_array_2[dir_entry_index_2].size = appended_file.size();
+            disk.write(active_block_2,(uint8_t*)file_array_2);
+            return 0;
+        } else {
+            do{
+                disk.read(block_to_read_1,(uint8_t*)&file_data_1);
+                std::string file_1_str(file_data_1);
+                if (file_1_str.find_first_of("\n") != std::string::npos){
+                    file_1_str.erase(file_1_str.find_first_of("\n"));
+                }
+                std::string appended_file = file_2_str + file_1_str;
+                disk.write(block_to_read_2,(uint8_t*)appended_file.c_str());
+                file_array_2[dir_entry_index_2].size = appended_file.size();
+                disk.write(active_block_2,(uint8_t*)file_array_2);
+                block_to_read_1 = fat[block_to_read_1];
+            }while (fat[block_to_read_1] != FAT_EOF);
+            return 0;
+        }
+    } else {
+        do{
+            block_to_read_2 = fat[block_to_read_2];
+        }while (fat[block_to_read_2] != FAT_EOF);
+
+        if (fat[block_to_read_1] == FAT_EOF){
+            disk.read(block_to_read_1,(uint8_t*)&file_data_1);
+            disk.read(block_to_read_2,(uint8_t*)&file_data_2);
+            std::string file_1_str(file_data_1);
+            std::string file_2_str(file_data_2);
+            if (file_2_str.find_first_of("\n") != std::string::npos){
+                file_2_str.erase(file_2_str.find_first_of("\n"));
+            }
+            std::string appended_file = file_2_str + file_1_str;
+            disk.write(block_to_read_2,(uint8_t*)appended_file.c_str());
+            file_array_2[dir_entry_index_2].size = appended_file.size();
+            disk.write(active_block_2,(uint8_t*)file_array_2);
+            return 0;
+        } else {
+            do{
+                disk.read(block_to_read_1,(uint8_t*)&file_data_1);
+                disk.read(block_to_read_2,(uint8_t*)&file_data_2);
+                std::string file_1_str(file_data_1);
+                std::string file_2_str(file_data_2);
+                if (file_2_str.find_first_of("\n") != std::string::npos){
+                    file_2_str.erase(file_2_str.find_first_of("\n"));
+                }
+                std::string appended_file = file_2_str + file_1_str;
+                disk.write(block_to_read_2,(uint8_t*)appended_file.c_str());
+                file_array_2[dir_entry_index_2].size = appended_file.size();
+                disk.write(active_block_2,(uint8_t*)file_array_2);
+                block_to_read_1 = fat[block_to_read_1];
+            }while (fat[block_to_read_1] != FAT_EOF);
+            return 0;
+        }
+    }
+
+    disk.read(block_to_read_1,(uint8_t*)&file_data_1);
+    disk.read(block_to_read_2,(uint8_t*)&file_data_2);
+
+
+    std::string file_1_str(file_data_1);
+    std::string file_2_str(file_data_2);
+
+    if (file_2_str.find_first_of("\n") != std::string::npos){
+        file_2_str.erase(file_2_str.find_first_of("\n"));
+    } 
+
+    std::string appended_file = file_2_str + file_1_str;
+
+    disk.write(block_to_read_2,(uint8_t*)appended_file.c_str());
+    file_array_2[dir_entry_index_2].size = appended_file.size();
+    disk.write(active_block_2,(uint8_t*)file_array_2);
+
     return 0;
 }
 
