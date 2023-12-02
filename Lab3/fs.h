@@ -53,6 +53,11 @@ private:
     int is_name_valid(std::string name);
 
     int is_root(int block);
+
+    int full_format();
+
+    std::string access_int_to_acronym(int access_int);
+
 public:
     FS();
     ~FS();
