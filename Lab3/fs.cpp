@@ -111,7 +111,7 @@ FS::get_subdiretory_from_path(std::string org_path){
         for (int i = is_root(block_to_access); i < DIR_ENTRY_AMOUNT; i++){
             if (strcmp(file_array[i].file_name,option.c_str()) == 0){
                 if((file_array[i].access_rights & READ) == 0){
-                    std::cout << "Accesses not allowd"
+                    std::cout << "Accesses not allowed";
                     return -1;
                 }
                 block_to_access = file_array[i].first_blk;
