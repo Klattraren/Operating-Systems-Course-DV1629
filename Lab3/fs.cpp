@@ -80,7 +80,6 @@ FS::get_subdiretory_from_path(std::string org_path){
         //Reading in the active block and looping through the dir entries
         for (int i = is_root(block_to_access); i < DIR_ENTRY_AMOUNT; i++){
             if (strcmp(file_array[i].file_name,option.c_str()) == 0){
-                // std::cout << "block_to_access_name: " << file_array[i].file_name << "\n";
                 block_to_access = file_array[i].first_blk;
                 break;
             }
@@ -134,12 +133,12 @@ FS::get_subdiretory_from_path(std::string org_path){
 int
 FS::is_name_valid(std::string name){
     if (name.length() >= 56){
-        std::cout << "Name is too long\n";
+        std::cout << "Error name is too long\n";
         return -1;
     }
     else if (name.length() == 0)
     {
-        std::cout << "Name is empty\n";
+        std::cout << "Error name is empty\n";
         return -1;
     }
     return 0;
@@ -652,11 +651,9 @@ FS::mv(std::string sourcepath, std::string destpath)
                 std::cout << "No read and write access rights\n";
                 return -1;
             } else{
-                // std::cout << "File found: " << file_array_source[i].file_name << "\n";
                 source_dir_entry_index = i;
             }
         } else if (file_array_source[i].file_name,destname.c_str() == 0){
-            // std::cout << "Destination path already exists!\n";
             return -1;
         }
     }
@@ -790,9 +787,7 @@ FS::rm(std::string filepath)
     }
     // If file is multiple blocks, we need to loop through the blocks until we reach EOF
     else {
-        std::cout << "File is multiple blocks\n";
         while (fat[block_to_read] != FAT_EOF){
-            std::cout << "Deleting block: " << block_to_read << "\n";
             disk.write(block_to_read,(uint8_t*)&zeros);
             fat[block_to_read] = FAT_FREE;
             block_to_read = fat[block_to_read];
