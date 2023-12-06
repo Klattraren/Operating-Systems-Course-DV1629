@@ -110,6 +110,10 @@ FS::get_subdiretory_from_path(std::string org_path){
         //Reading in the active block and looping through the dir entries
         for (int i = is_root(block_to_access); i < DIR_ENTRY_AMOUNT; i++){
             if (strcmp(file_array[i].file_name,option.c_str()) == 0){
+                if((file_array[i].access_rights & READ) == 0){
+                    std::cout << "Accesses not allowd"
+                    return -1;
+                }
                 block_to_access = file_array[i].first_blk;
                 path_found = 1;
                 //Checking if the path contains files
@@ -252,7 +256,7 @@ FS::create(std::string filepath)
 
     //Searching if there is space in directory, if not return -1
     for (int i = is_root(active_block); i < DIR_ENTRY_AMOUNT; i++){
-        if (strcmp(file_array[i].file_name,filepath.c_str()) == 0){
+        if (strcmp(file_array[i].file_name,filename.c_str()) == 0){
             std::cout << "Error file already exists...\n";
             return -1;
         }else if (strcmp(file_array[i].file_name,"") == 0){
@@ -575,8 +579,8 @@ FS::cp(std::string sourcepath, std::string destpath)
     int i = 0;
     char file_data[BLOCK_SIZE];
 
-// Checking if file is only one block
-//Otherwise we need to loop through the blocks until we reach EOF
+    // Checking if file is only one block
+    //Otherwise we need to loop through the blocks until we reach EOF
 
     if (fat[source_block_to_read] == FAT_EOF){
         disk.read(source_block_to_read,(uint8_t*)file_data);
@@ -1081,7 +1085,7 @@ FS::cd(std::string dirpath)
         }
         std::cout << "error directory not found...\n";
     return -1;
-}
+    }
 }
 
 // pwd prints the full path, i.e., from the root directory, to the current
