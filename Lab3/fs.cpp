@@ -2,6 +2,12 @@
 #include "fs.h"
 #include <cstring>
 
+/*---------------------------------------
+MADE BY
+Tobias Mattsson, tomt21@student.bth.se, DVAMI21h
+Samuel Nyberg, sany@student.bth.se, DVAMI21h
+-----------------------------------------*/
+
 // Help functions
 
 /*Finds the a free block in the FAT system and returns the index for it,
@@ -194,7 +200,7 @@ FS::full_format()
     return 0;
 }
 
-
+//Program functions
 FS::FS()
 {
     std::cout << "FS::FS()... Creating file system\n";
