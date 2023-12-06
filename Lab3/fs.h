@@ -2,6 +2,12 @@
 #include <cstdint>
 #include "disk.h"
 
+/*---------------------------------------
+MADE BY
+Tobias Mattsson, tomt21@student.bth.se, DVAMI21h
+Samuel Nyberg, sany@student.bth.se, DVAMI21h
+-----------------------------------------*/
+
 #ifndef __FS_H__
 #define __FS_H__
 
