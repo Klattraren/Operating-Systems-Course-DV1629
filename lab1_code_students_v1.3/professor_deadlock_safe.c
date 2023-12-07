@@ -80,14 +80,14 @@ int main(int argc, char **argv)
 
                 printf("Professor %d is hungry\n", i);
 
-                // Take left chopstick if available
+                // Take both chopstick if available
                 left_stick = take_chopstick((i % 5));
                 right_stick = take_chopstick((i + 1) % 5);
                 if (left_stick && right_stick) {
                     printf("Professor %d has taken both chopsticks\n", i);
-                    printf("Professor %d is thinking\n", i);
-                    int wait_time = (rand() % 6000000) + 2000000;
-                    usleep(wait_time);
+                    // printf("Professor %d is thinking\n", i);
+                    // int wait_time = (rand() % 6000000) + 2000000;
+                    // usleep(wait_time);
 
                     printf("Professor %d is eating\n", i);
                     // Execute eat function in printf to compact code

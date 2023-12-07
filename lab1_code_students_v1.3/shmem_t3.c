@@ -32,7 +32,6 @@ int main(int argc, char **argv)
 	/* 0644 means read and write */
 	empty_sem = sem_open("/sem_empty", O_CREAT, 0644, 10);
 	full_sem = sem_open("/sem_full", O_CREAT, 0644, 0);
-	mutex_sem = sem_open("/sem_mutex", O_CREAT, 0644, 1);
 
 
 
@@ -54,15 +53,12 @@ int main(int argc, char **argv)
 			usleep(wait_time);
 
 			sem_wait(empty_sem);
-			sem_wait(mutex_sem);
 
 			shmp->buffer[shmp->writeIndex] = var1;
 			shmp->writeIndex = (shmp->writeIndex + 1) % 10;
 			shmp->count++;
 			printf("Sending %d\n", var1); 
-			fflush(stdout);
 
-			sem_post(mutex_sem);
 			sem_post(full_sem);
 		}
 		shmdt(addr);
@@ -73,7 +69,6 @@ int main(int argc, char **argv)
 			/* read from shmem */
 			
 			sem_wait(full_sem);
-			sem_wait(mutex_sem);
 
 			var2 = shmp->buffer[shmp->readIndex];
 			shmp->readIndex = (shmp->readIndex + 1) % 10;
@@ -82,18 +77,16 @@ int main(int argc, char **argv)
 			int wait_time = (rand() % 1800000) + 200000;
 			usleep(wait_time);
 
-			printf("Received %d\n", var2); fflush(stdout);
+			printf("Received %d\n", var2);
 
-			sem_post(mutex_sem);
 			sem_post(empty_sem);
 		}
 		shmdt(addr);
 		shmctl(shmid, IPC_RMID, shm_buf);
 	}
+	fflush(stdout);
 	sem_close(empty_sem);
 	sem_close(full_sem);
-	sem_close(mutex_sem);
 	sem_unlink("/sem_empty");
 	sem_unlink("/sem_full");
-	sem_unlink("/sem_mutex");
 }
