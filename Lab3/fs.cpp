@@ -299,7 +299,7 @@ FS::create(std::string filepath)
     strcpy(new_file.file_name,filename.c_str());
     new_file.size = file_data.size();
     new_file.type = TYPE_FILE;
-    new_file.access_rights = READ | WRITE | EXECUTE;
+    new_file.access_rights = READ | WRITE;
 
 
     //Finding a new datablock to place the file in
@@ -718,6 +718,8 @@ FS::mv(std::string sourcepath, std::string destpath)
 
         dir_entry empty_entry;
         file_array_source[source_dir_entry_index] = empty_entry;
+        strcpy(file_array_source[source_dir_entry_index].file_name, "");
+        std::cout << "Active block source: " << file_array_source[source_dir_entry_index].file_name << "\n";
         disk.write(active_block_source,(uint8_t*)file_array_source);
 
     // If destination is a directory, we move the file to the directory
