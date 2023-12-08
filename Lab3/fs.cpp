@@ -267,7 +267,7 @@ FS::create(std::string filepath)
             return -1;
         }else if (strcmp(file_array[i].file_name,"") == 0){
             if (active_block != ROOT_BLOCK){
-                if ((file_array[ROOT_BLOCK].access_rights & WRITE) == 0){ //Checking if we have write access rights
+                if ((file_array[0].access_rights & WRITE) == 0){ //Checking if we have write access rights
                     std::cout << "Error no write access rights...\n";
                     return -1;
                 }
@@ -374,7 +374,7 @@ FS::cat(std::string filepath)
     //Searching for file in subdirectory/root directory
     for (int i = is_root(active_block); i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,filename.c_str())==0){
-            if ((file_array[i].access_rights & 1) == 0){ //Checking if we have read access rights
+            if ((file_array[i].access_rights & READ) == 0){ //Checking if we have read access rights
                 std::cout << "Error no access rights...\n";
                 return -1;
             }
@@ -430,10 +430,6 @@ FS::ls()
     //Looping through the root/sub directory that is our current standing block
     for (int i = is_root(current_dir.block); i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,"") != 0){
-            if (file_array[i].access_rights & READ == 0){ //Checking if we have read access rights
-                std::cout << "No read access rights\n";
-                return -1;
-            }
 
             //Checking if we have acsess to view the file, tror det är mycket effektivare o kolla
             access_acronym = access_int_to_acronym(file_array[i].access_rights);
@@ -659,7 +655,7 @@ FS::mv(std::string sourcepath, std::string destpath)
     int source_dir_entry_index = -1;
     for (int i = is_root(active_block_source); i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array_source[i].file_name,filename_source.c_str()) == 0){
-            if ( (file_array_source[i].access_rights & READ) == 0  && (file_array_source[i].access_rights & WRITE) == 0) {
+            if ( (file_array_source[i].access_rights & READ) == 0) {
                 std::cout << "No read and write access rights\n";
                 return -1;
             } else{
@@ -999,7 +995,7 @@ FS::mkdir(std::string dirpath)
     dir_entry file_array[DIR_ENTRY_AMOUNT]{};
     disk.read(active_block,(uint8_t*)&file_array);
 
-    if ((file_array[ROOT_BLOCK].access_rights & READ) == 0 && (file_array[ROOT_BLOCK].access_rights & WRITE) == 0){
+    if ((file_array[0].access_rights & READ) == 0 && (file_array[0].access_rights & WRITE) == 0){
                 std::cout << "No read and write access rights\n";
                 return -1;
             }
