@@ -14,50 +14,23 @@ static double a[SIZE][SIZE];
 static double b[SIZE][SIZE];
 static double c[SIZE][SIZE];
 
+
 static void
-init_specific_matrix_a(int row)
+init_matrix(void)
 {
-    int j;
+    int i, j;
+
+    for (i = 0; i < SIZE; i++)
         for (j = 0; j < SIZE; j++) {
 	        /* Simple initialization, which enables us to easy check
 	         * the correct answer. Each element in c will have the same
 	         * value as SIZE after the matmul operation.
 	         */
-	        a[row][j] = 1.0;
+	        a[i][j] = 1.0;
+	        b[i][j] = 1.0;
         }
 }
 
-static void
-init_specific_matrix_b(int row)
-{
-    int j;
-        for (j = 0; j < SIZE; j++) {
-	        /* Simple initialization, which enables us to easy check
-	         * the correct answer. Each element in c will have the same
-	         * value as SIZE after the matmul operation.
-	         */
-	        b[row][j] = 1.0;
-        }
-}
-
-static void init_matrix(void){
-    int row[SIZE];
-    for (int i = 0; i<SIZE; i++){
-        row[i] = i;
-    }
-    pthread_t thread_a,thread_b;
-
-    int i;
-    for (i = 0; i < SIZE; i++){ //for each row creat a new thread
-        pthread_create(&thread_a, NULL,init_specific_matrix_a,(void*)row[i]);
-        pthread_create(&thread_b, NULL,init_specific_matrix_b,(void*)row[i]);
-    }
-
-    for (i = 0; i < SIZE; i++){ //wait for the threads to finish
-        pthread_join(thread_a, NULL);
-        pthread_join(thread_b, NULL);
-    }
-}
 
 static void thread_multi(int row){ //the function takes in a row and computes the multiplication for every element on that row
     int j, k;

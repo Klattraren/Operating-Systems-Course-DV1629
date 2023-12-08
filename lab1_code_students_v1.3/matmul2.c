@@ -14,29 +14,49 @@ static double a[SIZE][SIZE];
 static double b[SIZE][SIZE];
 static double c[SIZE][SIZE];
 
-//Created a functon to initialize the matrix a
-static void init_a(void){
-    int i, j;
-    for (i = 0; i < SIZE; i++) //For each row
-        for (j = 0; j < SIZE; j++) //For each column
-            a[i][j] = (double)(i + j); //Set the value of the element
+static void
+init_specific_matrix_a(int row)
+{
+    int j;
+        for (j = 0; j < SIZE; j++) {
+	        /* Simple initialization, which enables us to easy check
+	         * the correct answer. Each element in c will have the same
+	         * value as SIZE after the matmul operation.
+	         */
+	        a[row][j] = 1.0;
+        }
 }
 
-//Created a functon to initialize the matrix b
-static void init_b(void){
-    int i, j;
-    for (i = 0; i < SIZE; i++) //For each row
-        for (j = 0; j < SIZE; j++) //For each column
-            b[i][j] = (double)(i * j); //Set the value of the element
-}
 static void
-init_matrix(void)
+init_specific_matrix_b(int row)
 {
-    pthread_t thread_a, thread_b; //initialize two threads for a and b
-    pthread_create(&thread_a, NULL, init_a, NULL); //assign the threads to the functions
-    pthread_create(&thread_b, NULL, init_b, NULL); //assign the threads to the functions
-    pthread_join(thread_a, NULL); //wait for the threads to finish
-    pthread_join(thread_b, NULL); //wait for the threads to finish
+    int j;
+        for (j = 0; j < SIZE; j++) {
+	        /* Simple initialization, which enables us to easy check
+	         * the correct answer. Each element in c will have the same
+	         * value as SIZE after the matmul operation.
+	         */
+	        b[row][j] = 1.0;
+        }
+}
+
+static void init_matrix(void){
+    int row[SIZE];
+    for (int i = 0; i<SIZE; i++){
+        row[i] = i;
+    }
+    pthread_t thread_a,thread_b;
+
+    int i;
+    for (i = 0; i < SIZE; i++){ //for each row creat a new thread
+        pthread_create(&thread_a, NULL,init_specific_matrix_a,(void*)row[i]);
+        pthread_create(&thread_b, NULL,init_specific_matrix_b,(void*)row[i]);
+    }
+
+    for (i = 0; i < SIZE; i++){ //wait for the threads to finish
+        pthread_join(thread_a, NULL);
+        pthread_join(thread_b, NULL);
+    }
 }
 
 static void thread_multi(int split){
