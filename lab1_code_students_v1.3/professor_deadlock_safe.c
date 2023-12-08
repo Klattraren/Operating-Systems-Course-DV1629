@@ -9,18 +9,17 @@
 #include <time.h>
 #include <signal.h>
 #include <wait.h>
+#include <errno.h>
 
 #define SHMSIZE 128
 #define NUM_PROCESSES 5
 
-struct chop_stick 
+struct chop_stick
 {
-    int buffer[5];
+    sem_t chopstick_sem[5];
 };
 
-volatile struct chop_stick *chst = NULL; 
-
-sem_t *mutex_sem;
+struct chop_stick *chst = NULL;
 
 // Pre-declare functions
 int think(int i);
@@ -50,27 +49,36 @@ int main(int argc, char **argv)
     /* allocate a chunk of shared memory */
     shmid = shmget(IPC_PRIVATE, SHMSIZE, IPC_CREAT | SHM_R | SHM_W);
     chst = (struct chop_stick *)shmat(shmid, addr, 0);
-    // Create semaphores
-    mutex_sem = sem_open("/mutex_sema", O_CREAT, O_RDWR, 1);
 
-    for (i = 0; i < NUM_PROCESSES; i++) {
+    // Create semaphores for each chopstick
+    for (i = 0; i < 5; i++)
+    {
+        sem_init(&chst->chopstick_sem[i], 1, 1); // Initialize with value 1
+    }
+
+    for (i = 0; i < NUM_PROCESSES; i++)
+    {
         pids[i] = fork();
 
         // Check for fork error
-        if (pids[i] == -1) {
+        if (pids[i] == -1)
+        {
             fprintf(stderr, "Failed to fork process %d\n", i);
             exit(EXIT_FAILURE);
         }
 
-        if (pids[i] == 0) {
-            while (1) {                
+        if (pids[i] == 0)
+        {
+            // Child process
+            while (1)
+            {
 
-                 // Check for the interrupted flag inside the loop
-                if (interrupted) {
-                    sem_post(mutex_sem);
+                // Check for the interrupted flag inside the loop
+                if (interrupted)
+                {
                     break;
                 }
-                
+
                 int left_stick, right_stick = 0;
                 printf("Professor %d is thinking\n", i);
                 // Didn't create a think function because there is two different
@@ -80,50 +88,54 @@ int main(int argc, char **argv)
 
                 printf("Professor %d is hungry\n", i);
 
-                // Take both chopstick if available
-                left_stick = take_chopstick((i % 5));
-                right_stick = take_chopstick((i + 1) % 5);
-                if (left_stick && right_stick) {
+                // Take both chopsticks if available
+                left_stick = take_chopstick(i);
+                right_stick = take_chopstick((i + 1) % NUM_PROCESSES);
+                if (left_stick && right_stick)
+                {
                     printf("Professor %d has taken both chopsticks\n", i);
-                    // printf("Professor %d is thinking\n", i);
-                    // int wait_time = (rand() % 6000000) + 2000000;
-                    // usleep(wait_time);
-
                     printf("Professor %d is eating\n", i);
-                    // Execute eat function in printf to compact code
                     printf("Professor %d is done eating\n\n", eat(i));
 
                     // Put chopsticks back on the table
-                    put_chopstick((i % 5));
-                    put_chopstick((i + 1) % 5);
+                    put_chopstick(i);
+                    put_chopstick((i + 1) % NUM_PROCESSES);
 
-                    fflush(stdout);
-
-                } else {
+                    
+                }
+                else
+                {
                     // Here it tries to put both chopsticks back on the table,
                     // if it couldn't take both chopsticks
                     printf("Both chopsticks not available for %d\n", i);
-                    put_chopstick((i % 5));
-                    put_chopstick((i + 1) % 5);
+                    put_chopstick(i);
+                    put_chopstick((i + 1) % NUM_PROCESSES);
                     continue;
                 }
             }
 
             // Cleanup shared memory
-            sem_close(mutex_sem);
-            sem_unlink("/mutex_sema");
+            for (i = 0; i < 5; i++)
+            {
+                sem_destroy(&chst->chopstick_sem[i]);
+            }
             shmctl(shmid, IPC_RMID, NULL);
+            fflush(stdout);
             exit(EXIT_SUCCESS);
         }
-
     }
 
     // Wait for all child processes to complete
-    for (i = 0; i < NUM_PROCESSES; i++) {
+    for (i = 0; i < NUM_PROCESSES; i++)
+    {
         wait(NULL);
     }
 
     // Cleanup shared memory
+    for (i = 0; i < 5; i++)
+    {
+        sem_destroy(&chst->chopstick_sem[i]);
+    }
     shmctl(shmid, IPC_RMID, NULL);
 
     return 0;
@@ -138,28 +150,33 @@ int think(int i)
 
 int take_chopstick(int n)
 {
-    sem_wait(mutex_sem);
-    if (chst->buffer[n] == 0) {
-        chst->buffer[n] = 1;
-        sem_post(mutex_sem);
+     int result = sem_trywait(&chst->chopstick_sem[n]);
+    
+    if (result == 0) {
+        // Successfully acquired the chopstick
         return 1;
+    } else if (result == -1 && errno == EAGAIN) {
+        // Chopstick is not available
+        return 0;
     } else {
-        sem_post(mutex_sem);
+        // Error occurred
+        perror("Error in take_chopstick");
         return 0;
     }
 }
 
 int put_chopstick(int n)
 {
-    sem_wait(mutex_sem);
-    if (chst->buffer[n] == 1){
-        chst->buffer[n] = 0;
+     int result = sem_post(&chst->chopstick_sem[n]);
+    
+    if (result == 0) {
+        // Successfully released the chopstick
+        return 1;
+    } else {
+        // Error occurred
+        perror("Error in put_chopstick");
+        return 0;
     }
-    else {
-        chst->buffer[n] = 1;
-    }
-    sem_post(mutex_sem);
-    return 1;
 }
 
 int eat(int i)

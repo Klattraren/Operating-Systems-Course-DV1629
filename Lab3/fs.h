@@ -27,7 +27,7 @@ Samuel Nyberg, sany@student.bth.se, DVAMI21h
 
 
 struct dir_entry {
-    char file_name[56]; // name of the file / sub-directory
+    char file_name[56] = ""; // name of the file / sub-directory
     uint32_t size; // size of the file in bytes
     uint16_t first_blk; // index in the FAT for the first block of the file
     uint8_t type; // directory (1) or file (0)

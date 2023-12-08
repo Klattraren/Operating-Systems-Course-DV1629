@@ -267,7 +267,7 @@ FS::create(std::string filepath)
             return -1;
         }else if (strcmp(file_array[i].file_name,"") == 0){
             if (active_block != ROOT_BLOCK){
-                if ((file_array[ROOT_BLOCK].access_rights & WRITE) == 0){ //Checking if we have write access rights
+                if ((file_array[0].access_rights & WRITE) == 0){ //Checking if we have write access rights
                     std::cout << "Error no write access rights...\n";
                     return -1;
                 }
@@ -296,10 +296,10 @@ FS::create(std::string filepath)
 
     //Create new dir entry
     dir_entry new_file;
-    strncpy(new_file.file_name,filename.c_str(),56);
+    strcpy(new_file.file_name,filename.c_str());
     new_file.size = file_data.size();
     new_file.type = TYPE_FILE;
-    new_file.access_rights = READ | WRITE | EXECUTE;
+    new_file.access_rights = READ | WRITE;
 
 
     //Finding a new datablock to place the file in
@@ -374,7 +374,7 @@ FS::cat(std::string filepath)
     //Searching for file in subdirectory/root directory
     for (int i = is_root(active_block); i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,filename.c_str())==0){
-            if ((file_array[i].access_rights & 1) == 0){ //Checking if we have read access rights
+            if ((file_array[i].access_rights & READ) == 0){ //Checking if we have read access rights
                 std::cout << "Error no access rights...\n";
                 return -1;
             }
@@ -430,10 +430,6 @@ FS::ls()
     //Looping through the root/sub directory that is our current standing block
     for (int i = is_root(current_dir.block); i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array[i].file_name,"") != 0){
-            if (file_array[i].access_rights & READ == 0){ //Checking if we have read access rights
-                std::cout << "No read access rights\n";
-                return -1;
-            }
 
             //Checking if we have acsess to view the file, tror det är mycket effektivare o kolla
             access_acronym = access_int_to_acronym(file_array[i].access_rights);
@@ -554,9 +550,11 @@ FS::cp(std::string sourcepath, std::string destpath)
     }
 
     if (filename_dest == ".." || file_type == TYPE_DIR){
-        strncpy(new_file.file_name,filename_source.c_str(),56);
+        strcpy(new_file.file_name,filename_source.c_str());
+    
+
     } else {
-        strncpy(new_file.file_name,filename_dest.c_str(),56);
+        strcpy(new_file.file_name,filename_dest.c_str());
     }
 
     if (file_type != TYPE_FILE){
@@ -657,7 +655,7 @@ FS::mv(std::string sourcepath, std::string destpath)
     int source_dir_entry_index = -1;
     for (int i = is_root(active_block_source); i < DIR_ENTRY_AMOUNT; i++){
         if (strcmp(file_array_source[i].file_name,filename_source.c_str()) == 0){
-            if ( (file_array_source[i].access_rights & READ) == 0  && (file_array_source[i].access_rights & WRITE) == 0) {
+            if ( (file_array_source[i].access_rights & READ) == 0) {
                 std::cout << "No read and write access rights\n";
                 return -1;
             } else{
@@ -698,7 +696,7 @@ FS::mv(std::string sourcepath, std::string destpath)
     // IF destination is a file, we just rename the file
     if (dest_path_type == TYPE_FILE && destname != ".."){
 
-        strncpy(file_array_source[source_dir_entry_index].file_name, destpath.c_str(),56);
+        strcpy(file_array_source[source_dir_entry_index].file_name, destpath.c_str());
         disk.write(active_block_source,(uint8_t*)file_array_source);
 
     // If destination is previous directory, we move the file to the previous directory
@@ -716,6 +714,8 @@ FS::mv(std::string sourcepath, std::string destpath)
 
         dir_entry empty_entry;
         file_array_source[source_dir_entry_index] = empty_entry;
+        strcpy(file_array_source[source_dir_entry_index].file_name, "");
+        std::cout << "Active block source: " << file_array_source[source_dir_entry_index].file_name << "\n";
         disk.write(active_block_source,(uint8_t*)file_array_source);
 
     // If destination is a directory, we move the file to the directory
@@ -995,7 +995,7 @@ FS::mkdir(std::string dirpath)
     dir_entry file_array[DIR_ENTRY_AMOUNT]{};
     disk.read(active_block,(uint8_t*)&file_array);
 
-    if ((file_array[ROOT_BLOCK].access_rights & READ) == 0 && (file_array[ROOT_BLOCK].access_rights & WRITE) == 0){
+    if ((file_array[0].access_rights & READ) == 0 && (file_array[0].access_rights & WRITE) == 0){
                 std::cout << "No read and write access rights\n";
                 return -1;
             }
@@ -1020,7 +1020,7 @@ FS::mkdir(std::string dirpath)
     int directory_block = find_free_block();
     //Create new dir entry
     dir_entry new_dir;
-    strncpy(new_dir.file_name,dirname.c_str(),56);
+    strcpy(new_dir.file_name,dirname.c_str());
     new_dir.size = 0;
     new_dir.type = TYPE_DIR;
     new_dir.access_rights = READ | WRITE | EXECUTE;
@@ -1037,7 +1037,7 @@ FS::mkdir(std::string dirpath)
     parent_block.access_rights = READ | WRITE | EXECUTE;
     parent_block.size = 0;
     parent_block.type = TYPE_DIR;
-    strncpy(parent_block.file_name,dirname.c_str(),56);
+    strcpy(parent_block.file_name,dirname.c_str());
 
     dir_entry array[DIR_ENTRY_AMOUNT]{};
     array[0] = parent_block;
