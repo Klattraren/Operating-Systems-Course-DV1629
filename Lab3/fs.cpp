@@ -296,7 +296,7 @@ FS::create(std::string filepath)
 
     //Create new dir entry
     dir_entry new_file;
-    strncpy(new_file.file_name,filename.c_str(),56);
+    strcpy(new_file.file_name,filename.c_str());
     new_file.size = file_data.size();
     new_file.type = TYPE_FILE;
     new_file.access_rights = READ | WRITE | EXECUTE;
@@ -554,9 +554,11 @@ FS::cp(std::string sourcepath, std::string destpath)
     }
 
     if (filename_dest == ".." || file_type == TYPE_DIR){
-        strncpy(new_file.file_name,filename_source.c_str(),56);
+        strcpy(new_file.file_name,filename_source.c_str());
+    
+
     } else {
-        strncpy(new_file.file_name,filename_dest.c_str(),56);
+        strcpy(new_file.file_name,filename_dest.c_str());
     }
 
     if (file_type != TYPE_FILE){
@@ -698,7 +700,7 @@ FS::mv(std::string sourcepath, std::string destpath)
     // IF destination is a file, we just rename the file
     if (dest_path_type == TYPE_FILE && destname != ".."){
 
-        strncpy(file_array_source[source_dir_entry_index].file_name, destpath.c_str(),56);
+        strcpy(file_array_source[source_dir_entry_index].file_name, destpath.c_str());
         disk.write(active_block_source,(uint8_t*)file_array_source);
 
     // If destination is previous directory, we move the file to the previous directory
@@ -1020,7 +1022,7 @@ FS::mkdir(std::string dirpath)
     int directory_block = find_free_block();
     //Create new dir entry
     dir_entry new_dir;
-    strncpy(new_dir.file_name,dirname.c_str(),56);
+    strcpy(new_dir.file_name,dirname.c_str());
     new_dir.size = 0;
     new_dir.type = TYPE_DIR;
     new_dir.access_rights = READ | WRITE | EXECUTE;
@@ -1037,7 +1039,7 @@ FS::mkdir(std::string dirpath)
     parent_block.access_rights = READ | WRITE | EXECUTE;
     parent_block.size = 0;
     parent_block.type = TYPE_DIR;
-    strncpy(parent_block.file_name,dirname.c_str(),56);
+    strcpy(parent_block.file_name,dirname.c_str());
 
     dir_entry array[DIR_ENTRY_AMOUNT]{};
     array[0] = parent_block;
